@@ -35,13 +35,14 @@ export default function TerminalPanel({
   setSelectedProcess,
   appConfig
 }) {
-  const handleSend = async (code) => {
+  const handleSend = async (code, forceProcess = null) => {
     if (!appConfig?.ip || !appConfig?.port) {
       alert('App is missing IP or port information.');
       return;
     }
 
     console.log('Sending code:', code); // Debug log
+    console.log('Using process:', forceProcess || selectedProcess); // Debug log
 
     // Add command to output with pending status
     const newOutput = [...consoleOutput, { 
@@ -56,12 +57,6 @@ export default function TerminalPanel({
       const encodedData = window.btoa(unescape(encodeURIComponent(code)));
       console.log('Sending request to:', `http://${appConfig.ip}:${appConfig.port}/console`); // Debug log
       
-      // Get the process from the selected payload if it exists
-      const selectedPayloadObj = payloads.find(p => p.name === selectedPayload);
-      const processToUse = selectedPayloadObj ? selectedPayloadObj.process : selectedProcess;
-      
-      console.log('Using process:', processToUse); // Debug log
-      
       const response = await fetch(`http://${appConfig.ip}:${appConfig.port}/console`, {
         method: 'POST',
         headers: {
@@ -71,7 +66,7 @@ export default function TerminalPanel({
         },
         body: JSON.stringify({
           data: encodedData,
-          process: processToUse
+          process: forceProcess || selectedProcess
         }),
         mode: 'cors',
         credentials: 'omit'
@@ -209,37 +204,14 @@ export default function TerminalPanel({
                   ))}
                 </Select>
               </FormControl>
-              <FormControl size="small" sx={{ minWidth: 120 }}>
-                <Select
-                  value={selectedProcess}
-                  onChange={e => setSelectedProcess(e.target.value)}
-                  sx={{
-                    backgroundColor: theme.palette.background.paper,
-                    color: theme.palette.text.primary,
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      borderColor: theme.palette.background.nav,
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: theme.palette.background.sidebar,
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: theme.palette.color.blue,
-                    },
-                    '& .MuiSelect-icon': {
-                      color: theme.palette.text.primary,
-                    },
-                  }}
-                >
-                  <MenuItem value="renderer">Renderer</MenuItem>
-                  <MenuItem value="main">Main</MenuItem>
-                </Select>
-              </FormControl>
               <Button
                 variant="contained"
                 size="small"
                 onClick={() => {
                   const payload = payloads.find(p => p.name === selectedPayload);
-                  if (payload) handleSend(payload.code);
+                  if (payload) {
+                    handleSend(payload.code, payload.process);
+                  }
                 }}
                 disabled={!selectedPayload || isSending}
                 sx={{
@@ -344,7 +316,7 @@ export default function TerminalPanel({
       </Box>
 
       {/* Terminal Input */}
-      <Box sx={{
+      <Box sx={{ 
         display: 'flex',
         alignItems: 'flex-start',
         gap: 1,
@@ -413,6 +385,31 @@ export default function TerminalPanel({
             }
           }}
         />
+        <FormControl size="small" sx={{ minWidth: 120, mt: 1 }}>
+          <Select
+            value={selectedProcess}
+            onChange={e => setSelectedProcess(e.target.value)}
+            sx={{
+              backgroundColor: theme.palette.background.paper,
+              color: theme.palette.text.primary,
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: theme.palette.background.nav,
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: theme.palette.background.sidebar,
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: theme.palette.color.blue,
+              },
+              '& .MuiSelect-icon': {
+                color: theme.palette.text.primary,
+              },
+            }}
+          >
+            <MenuItem value="renderer">Renderer</MenuItem>
+            <MenuItem value="main">Main</MenuItem>
+          </Select>
+        </FormControl>
       </Box>
     </Box>
   );
