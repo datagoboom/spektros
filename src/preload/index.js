@@ -16,8 +16,7 @@ const api = {
   
   // App Directory APIs
   app: {
-    getPayloadsPath: () => ipcRenderer.invoke('app:getPayloadsPath'),
-    openPayloadsFolder: () => ipcRenderer.invoke('app:openPayloadsFolder'),
+
     getThemes: () => ipcRenderer.invoke('app:getThemes'),
     loadTheme: (themeId) => ipcRenderer.invoke('app:loadTheme', themeId),
   },
@@ -27,7 +26,6 @@ const api = {
     setup: (asarPath) => ipcRenderer.invoke('inject:setup', asarPath),
     injectPayload: (payloadPath, asarPath) => ipcRenderer.invoke('inject:payload', payloadPath, asarPath),
     createPayload: (name, content, category) => ipcRenderer.invoke('inject:createPayload', name, content, category),
-    listPayloads: () => ipcRenderer.invoke('inject:listPayloads'),
     listBackups: (asarPath) => ipcRenderer.invoke('inject:listBackups', asarPath),
     restoreBackup: (backupPath, asarPath) => ipcRenderer.invoke('inject:restoreBackup', backupPath, asarPath),
     deleteBackup: (backupPath) => ipcRenderer.invoke('inject:deleteBackup', backupPath),

@@ -52,8 +52,13 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
     ipcIsUploading, setIpcIsUploading,
     ipcExpandedRow, setIpcExpandedRow,
     clearIpcTraffic,
-    hookedAppSettings
+    hookedAppSettings,
+    getNextIpcMonitorPort,
+    saveAppSettings,
   } = useInjector();
+
+  // Always define app at the top level for use throughout the component
+  const app = appConfig || selectedApp;
 
   // Use appConfig or selectedApp for connection info
   let config = appConfig || selectedApp;
@@ -66,12 +71,53 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
     config = { ...config, ip };
   }
 
-  // Get the IPC monitor port from the app settings
-  const ipcMonitorPort = useMemo(() => {
-    if (!selectedApp?.uuid) return 10012; // Default fallback port
-    return hookedAppSettings[selectedApp.uuid]?.ipc_monitor_port || 10012;
-  }, [selectedApp?.uuid, hookedAppSettings]);
 
+  useEffect(() => {
+    console.log('[IPC-MONITOR] selectedApp debug:', {
+      selectedApp,
+      hasUuid: !!selectedApp?.uuid,
+      appConfigFromProps: appConfig,
+      configFromLogic: config,
+      keys: selectedApp ? Object.keys(selectedApp) : 'selectedApp is null/undefined'
+    });
+  }, [selectedApp, appConfig, config]);
+
+  
+  // Enhanced port calculation with debugging
+  const ipcMonitorPort = useMemo(() => {
+    // Use appConfig (passed as prop) instead of selectedApp (which is undefined)
+    const app = appConfig || selectedApp;
+    
+    console.log('[IPC-MONITOR] Port calculation debug:', {
+      appConfig,
+      selectedApp,
+      app,
+      uuid: app?.uuid,
+      ipc_monitor_port: app?.ipc_monitor_port
+    });
+    
+    if (!app?.uuid) {
+      console.warn('[IPC-MONITOR] No app UUID found, using fallback port 10012');
+      return 10012;
+    }
+    
+    // First try to get the port directly from the app object (most reliable)
+    if (app.ipc_monitor_port) {
+      console.log(`[IPC-MONITOR] Using direct port ${app.ipc_monitor_port} for app ${app.uuid}`);
+      return app.ipc_monitor_port;
+    }
+    
+    // Fallback to hookedAppSettings
+    const appSettings = hookedAppSettings[app.uuid];
+    if (appSettings?.ipc_monitor_port) {
+      console.log(`[IPC-MONITOR] Using settings port ${appSettings.ipc_monitor_port} for app ${app.uuid}`);
+      return appSettings.ipc_monitor_port;
+    }
+    
+    console.warn(`[IPC-MONITOR] No ipc_monitor_port found for app ${app.uuid}, using fallback port 10012`);
+    return 10012;
+  }, [appConfig, selectedApp, hookedAppSettings]);
+  
   // Local state for enhanced features
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [messageCount, setMessageCount] = useState(0);
@@ -88,9 +134,10 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
   const reconnectTimeoutRef = useRef(null);
   const tableContainerRef = useRef(null);
   const lastPingRef = useRef(null);
+  const reconnectLock = useRef(false);
 
   // Enhanced payload with better error handling and monitoring
-  const getPayloadCode = useCallback(() => `
+  const getPayloadCode = useCallback((port) => `
     (function() {
       'use strict';
       
@@ -381,13 +428,13 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
           
           global._broadcastIPCTraffic = broadcastIPCTraffic;
           
-          server.listen(${ipcMonitorPort}, '127.0.0.1', () => {
-            console.log('[IPC-MONITOR] ✓ Enhanced WebSocket server listening on port ' + ${ipcMonitorPort});
+          server.listen(${port}, '127.0.0.1', () => {
+            console.log('[IPC-MONITOR] ✓ Enhanced WebSocket server listening on port ' + ${port});
           });
           
           server.on('error', (err) => {
             if (err.code === 'EADDRINUSE') {
-              console.warn('[IPC-MONITOR] Port ' + ${ipcMonitorPort} + ' already in use');
+              console.warn('[IPC-MONITOR] Port ' + ${port} + ' already in use');
             } else {
               console.error('[IPC-MONITOR] Server error:', err);
             }
@@ -587,12 +634,12 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
           }
           
           console.log('[IPC-MONITOR] === ENHANCED INITIALIZATION COMPLETE ===');
-          console.log('[IPC-MONITOR] WebSocket endpoint: ws://127.0.0.1:${ipcMonitorPort}');
+          console.log('[IPC-MONITOR] WebSocket endpoint: ws://127.0.0.1:${port}');
           
           return { 
             success: true, 
             message: 'Initialized successfully',
-            port: ${ipcMonitorPort},
+            port: ${port},
             features: ['enhanced-serialization', 'performance-tracking', 'client-management']
           };
         } catch (err) {
@@ -609,7 +656,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
           isRunning,
           messageCount: ipcTraffic.length,
           hookInstalled,
-          port: ${ipcMonitorPort}
+          port: ${port}
         })
       };
       
@@ -639,26 +686,53 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
     })();
   `, []);
 
-  // Enhanced WebSocket connection with controlled auto-reconnect
+  
+  
+  // Enhanced WebSocket connection with better port resolution
+  
   const connectWebSocket = useCallback(() => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       return;
     }
+  
+    // Use appConfig (passed as prop) or fallback to selectedApp
+    const app = appConfig || selectedApp;
+    
+    // Get the port - prefer direct from app object, fallback to settings
+    let portToUse = 10012; // default fallback
+    
+    if (app?.ipc_monitor_port) {
+      portToUse = app.ipc_monitor_port;
+    } else if (app?.uuid && hookedAppSettings[app.uuid]?.ipc_monitor_port) {
+      portToUse = hookedAppSettings[app.uuid].ipc_monitor_port;
+    }
+    
+    console.log(`[IPC-MONITOR] connectWebSocket called with:`, {
+      app,
+      portToUse,
+      ipcMonitorPort,
+      appConfig,
+      selectedApp
+    });
 
+  
     setConnectionStatus('connecting');
     
     try {
-      wsRef.current = new WebSocket(`ws://127.0.0.1:${ipcMonitorPort}`);
+      const wsUrl = `ws://127.0.0.1:${portToUse}`;
+      console.log(`[IPC-MONITOR] Connecting to WebSocket at: ${wsUrl}`);
+      
+      wsRef.current = new WebSocket(wsUrl);
       
       wsRef.current.onopen = () => {
         setConnectionStatus('connected');
         setIpcIsStreaming(true);
         setReconnectAttempts(0);
         setIpcError(null);
-        setHasRetried(false); // Reset retry flag on successful connect
-        // Send ping to measure latency
+        setHasRetried(false);
+        reconnectLock.current = false;
         lastPingRef.current = Date.now();
-        console.log('[IPC-MONITOR] WebSocket connected');
+        console.log(`[IPC-MONITOR] WebSocket connected to port ${portToUse}`);
       };
       
       wsRef.current.onmessage = (event) => {
@@ -678,7 +752,6 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
             console.log('[IPC-MONITOR] Connection confirmed:', data.clientId);
           }
           
-          // Calculate latency if this is a pong response
           if (lastPingRef.current) {
             setWsLatency(Date.now() - lastPingRef.current);
             lastPingRef.current = null;
@@ -692,16 +765,16 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
       wsRef.current.onerror = (error) => {
         console.error('[IPC-MONITOR] WebSocket error:', error);
         setConnectionStatus('error');
-        setIpcError('WebSocket connection error');
+        setIpcError(`WebSocket connection error to port ${portToUse}`);
       };
       
       wsRef.current.onclose = (event) => {
         console.log('[IPC-MONITOR] WebSocket closed:', event.code, event.reason);
         setConnectionStatus('disconnected');
         setIpcIsStreaming(false);
-        // Only allow one reconnect per successful connection
-        if (event.code === 1006 && !hasRetried) {
+        if (event.code === 1006 && !hasRetried && !reconnectLock.current) {
           setHasRetried(true);
+          reconnectLock.current = true;
           setTimeout(() => {
             connectWebSocket();
           }, 1000);
@@ -712,29 +785,58 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
     } catch (err) {
       console.error('[IPC-MONITOR] Failed to create WebSocket:', err);
       setConnectionStatus('error');
-      setIpcError('Failed to create WebSocket connection');
+      setIpcError(`Failed to create WebSocket connection to port ${portToUse}`);
     }
-  }, [maxMessages, reconnectAttempts, hasRetried, ipcMonitorPort]);
+  }, [maxMessages, reconnectAttempts, hasRetried, appConfig, selectedApp, hookedAppSettings, ipcMonitorPort]);
+  
 
-  // Enhanced upload function with better error handling
+  // Enhanced upload function that ensures port is saved before connecting
   const handleUpload = async () => {
     setIpcIsUploading(true);
     setIpcError(null);
     
     try {
-      if (!config || !config.ip || !config.port) {
-        throw new Error('Selected app is missing IP or port information');
-      }
+      // Use appConfig (passed as prop) or fallback to selectedApp
+      const app = appConfig || selectedApp;
       
-      const code = getPayloadCode();
+      if (!app || !app.ip) {
+        throw new Error('Selected app is missing IP information');
+      }
+  
+      if (!app.port) {
+        throw new Error('Selected app is missing port configuration');
+      }
+  
+      if (!app.uuid) {
+        throw new Error('Selected app is missing UUID');
+      }
+  
+      // Use the app's assigned main debug port for payload upload
+      const debugPort = app.port;
+      
+      // Get the IPC monitor port (should already be assigned)
+      let monitorPort = app.ipc_monitor_port;
+      if (!monitorPort) {
+        monitorPort = getNextIpcMonitorPort(hookedAppSettings);
+        console.log(`[IPC-MONITOR] Assigning new monitor port ${monitorPort} to app ${app.uuid}`);
+        // Save the new port to the app's settings
+        saveAppSettings({ ...app, ipc_monitor_port: monitorPort });
+        // Update the local reference
+        monitorPort = monitorPort;
+      }
+  
+      console.log(`[IPC-MONITOR] Upload starting - Debug port: ${debugPort}, Monitor port: ${monitorPort}`);
+  
+      const code = getPayloadCode(monitorPort);
       const encodedData = window.btoa(unescape(encodeURIComponent(code)));
       
-      const response = await fetch(`http://${config.ip}:${config.port}/console`, {
+      // Send payload to the app's main debug port
+      const response = await fetch(`http://${app.ip}:${debugPort}/console`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Origin': `http://${config.ip}:${config.port}`
+          'Origin': `http://${app.ip}:${debugPort}`
         },
         body: JSON.stringify({
           data: encodedData,
@@ -761,7 +863,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
       while (attempt < maxAttempts) {
         await new Promise(resolve => setTimeout(resolve, delay));
         
-        const resultResponse = await fetch(`http://${config.ip}:${config.port}/result/${result.jobId}`);
+        const resultResponse = await fetch(`http://${app.ip}:${debugPort}/result/${result.jobId}`);
         if (!resultResponse.ok) {
           throw new Error(`Failed to check job status: ${resultResponse.status}`);
         }
@@ -774,18 +876,12 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
         
         if (resultData.status === 'completed') {
           setIpcIsUploaded(true);
-          console.log('[IPC-MONITOR] Payload uploaded successfully');
-          
-          // Auto-connect after a short delay
-          setTimeout(() => {
-            connectWebSocket();
-          }, 1000);
-          
+          console.log(`[IPC-MONITOR] Payload uploaded successfully to ${app.ip}:${debugPort}, WebSocket will be on port ${monitorPort}`);
           break;
         }
         
         attempt++;
-        delay = Math.min(delay * 1.5, 3000); // Exponential backoff with cap
+        delay = Math.min(delay * 1.5, 3000);
       }
       
       if (attempt >= maxAttempts) {
@@ -800,6 +896,15 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
       setIpcIsUploading(false);
     }
   };
+  
+
+  // Connect WebSocket after upload and port assignment
+  useEffect(() => {
+    if (ipcIsUploaded && connectionStatus === 'disconnected' && ipcMonitorPort !== 10012) {
+      connectWebSocket();
+    }
+    // eslint-disable-next-line
+  }, [ipcIsUploaded, ipcMonitorPort]);
 
   // Enhanced disconnect function
   const handleDisconnect = useCallback(() => {
@@ -939,7 +1044,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
                 size="small"
                 onClick={connectWebSocket}
                 color="success"
-                disabled={!ipcIsUploaded || connectionStatus === 'connected' || connectionStatus === 'connecting'}
+                disabled={!app?.ipc_monitor_port || connectionStatus === 'connected' || connectionStatus === 'connecting'}
               >
                 <PlayIcon />
               </IconButton>
@@ -1233,7 +1338,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
             gap: 2
           }}>
             <Typography color={theme.palette.text.secondary} variant="h6">
-              {!ipcIsUploaded ? 'Upload payload to start monitoring' :
+              {!app?.ipc_monitor_port ? 'Upload payload to start monitoring' :
                connectionStatus === 'disconnected' ? 'Connect to start streaming' :
                connectionStatus === 'connecting' ? 'Connecting to WebSocket...' :
                'Waiting for IPC traffic'}
@@ -1262,7 +1367,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
               </>
             )}
             
-            {!ipcIsUploaded && (
+            {!app?.ipc_monitor_port && (
               <Button 
                 variant="contained" 
                 startIcon={<UploadIcon />}

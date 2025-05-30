@@ -107,15 +107,6 @@ export function ApiProvider({ children }) {
     return result;
   }, [handleApiCall]);
 
-  const listPayloads = useCallback(async () => {
-    const result = await handleApiCall(
-      () => window.api.inject.listPayloads(),
-      'Loading payloads'
-    );
-    
-    return result;
-  }, [handleApiCall]);
-
   const injectPayload = useCallback(async (payloadPath, asarPath) => {
     const result = await handleApiCall(
       () => window.api.inject.injectPayload(payloadPath, asarPath),
@@ -157,24 +148,6 @@ export function ApiProvider({ children }) {
     return result;
   }, [handleApiCall]);
 
-  // Directory API
-  const getPayloadsPath = useCallback(async () => {
-    const result = await handleApiCall(
-      () => window.api.app.getPayloadsPath(),
-      'Getting payloads path'
-    );
-    
-    return result.path;
-  }, [handleApiCall]);
-
-  const openPayloadsFolder = useCallback(async () => {
-    const result = await handleApiCall(
-      () => window.api.app.openPayloadsFolder(),
-      'Opening payloads folder'
-    );
-    
-    return result;
-  }, [handleApiCall]);
 
   // File Dialog API
   const openFileDialog = useCallback(async (options = {}) => {
@@ -274,7 +247,6 @@ export function ApiProvider({ children }) {
     
     // Payload operations
     createPayload,
-    listPayloads,
     injectPayload,
     
     // Backup operations
@@ -282,10 +254,7 @@ export function ApiProvider({ children }) {
     restoreBackup,
     deleteBackup,
     
-    // Directory operations
-    getPayloadsPath,
-    openPayloadsFolder,
-    
+
     // File dialogs
     openFileDialog,
     
