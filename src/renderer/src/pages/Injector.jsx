@@ -628,7 +628,7 @@ export default function Injector() {
                       )}
                       {hookedApps.map(app => (
                         <MenuItem key={app.uuid} value={app.uuid}>
-                          {app.name} ({app.uuid})
+                          {app.name} ({app.uuid.substring(0, 5)} - {app.ip}:{app.port})
                         </MenuItem>
                       ))}
                     </Select>
