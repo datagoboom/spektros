@@ -1,0 +1,72 @@
+[
+    {
+        "id": "root",
+        "label": "my-project",
+        "children": [
+            {
+                "id": "package.json",
+                "label": "package.json"
+            },
+            {
+                "id": "README.md",
+                "label": "README.md"
+            },
+            {
+                "id": "src",
+                "label": "src",
+                "children": [
+                    {
+                        "id": "src/index.js",
+                        "label": "index.js"
+                    },
+                    {
+                        "id": "src/utils",
+                        "label": "utils",
+                        "children": [
+                            {
+                                "id": "src/utils/helpers.js",
+                                "label": "helpers.js"
+                            },
+                            {
+                                "id": "src/utils/constants.js",
+                                "label": "constants.js"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "src/components",
+                        "label": "components",
+                        "children": [
+                            {
+                                "id": "src/components/Button.jsx",
+                                "label": "Button.jsx"
+                            },
+                            {
+                                "id": "src/components/Card.jsx",
+                                "label": "Card.jsx"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "tests",
+                "label": "tests",
+                "children": [
+                    {
+                        "id": "tests/index.test.js",
+                        "label": "index.test.js"
+                    }
+                ]
+            },
+            {
+                "id": ".gitignore",
+                "label": ".gitignore"
+            },
+            {
+                "id": ".env",
+                "label": ".env"
+            }
+        ]
+    }
+]
