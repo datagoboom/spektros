@@ -46,7 +46,7 @@ import Cookies from '../components/injector/Cookies';
 import IPCMonitor from '../components/injector/IPCMonitor';
 import { useInjector } from '../contexts/InjectorContext';
 import { useSettings } from '../contexts/SettingsContext';
-import { templatePayload } from '../components/injector/Payloads';
+import payloads from '../components/injector/Payloads';
 import { useApi } from '../contexts/ApiContext';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -111,14 +111,13 @@ export default function Injector() {
     setSelectedPayload(event.target.value);
   };
 
-  // Update the send payload handler to use the new structure
+  // Update the send payload handler to use the static payloads only
   const handleSendPayload = async () => {
     if (selectedPayload) {
-      const payload = contextPayloads.find(p => p.name === selectedPayload);
+      const payload = payloads.find(p => p.name === selectedPayload);
       if (payload) {
         // Set the process type based on the payload
         setSelectedProcess(payload.process);
-        
         // Wait for selectedProcess to match payload.process
         await new Promise(resolve => {
           const checkProcess = () => {
@@ -133,8 +132,7 @@ export default function Injector() {
           };
           checkProcess();
         });
-
-        // Execute the payload code
+        // Execute the static payload code (no templating)
         handleExecuteCode(payload.code);
       }
     }
@@ -174,43 +172,6 @@ export default function Injector() {
     }
   }, [setAsarPath, setIsSetupComplete, setSetupStatus, getNextAvailablePort]);
 
-  // Prepare payload when ASAR or payload selection changes
-  useEffect(() => {
-    const preparePayload = async () => {
-      if (!asarPath || !selectedPayload || !selectedAppConfig) {
-        setPreparedPayloadPath(null);
-        return;
-      }
-      // Use contextPayloads for up-to-date payloads
-      const payloadObj = contextPayloads.find(p => p.name === selectedPayload);
-      if (!payloadObj) {
-        setSetupStatus({
-          type: 'error',
-          message: 'Selected payload not found. Please select a valid payload.'
-        });
-        setPreparedPayloadPath(null);
-        return;
-      }
-      try {
-        const templatedPayload = templatePayload(payloadObj.code, { ...selectedAppConfig, APP_UUID: selectedAppConfig.uuid });
-        const payloadPath = `${selectedAppConfig.appDir}/tmp/hook.js`;
-        await window.api.analysis.saveFile(payloadPath, templatedPayload);
-        setPreparedPayloadPath(payloadPath);
-      } catch (error) {
-        setSetupStatus({
-          type: 'error',
-          message: 'Failed to prepare payload: ' + error.message
-        });
-        setPreparedPayloadPath(null);
-      }
-    };
-    preparePayload();
-  }, [asarPath, selectedPayload, selectedAppConfig, contextPayloads]);
-
-  // Update config handler
-  const handleConfigChange = (key, value) => {
-    setAsarConfig(prev => ({ ...prev, [key]: value }));
-  };
 
   // Inject Hook handler
   const handleInjectHook = async () => {
@@ -261,41 +222,6 @@ export default function Injector() {
       setIsSetupLoading(false);
     }
   };
-
-  // Load payloads
-  const loadPayloads = useCallback(async () => {
-    try {
-      setIsLoadingPayloads(true);
-      const result = await window.api.inject.listPayloads();
-      if (result.success) {
-        // Ensure each payload has content
-        const payloadsWithContent = await Promise.all(
-          result.payloads.map(async (payload) => {
-            try {
-              const contentResult = await window.api.analysis.getFileContent(payload.path);
-              return {
-                ...payload,
-                content: contentResult.success ? contentResult.content : ''
-              };
-            } catch (error) {
-              console.error(`Failed to load content for payload ${payload.name}:`, error);
-              return {
-                ...payload,
-                content: ''
-              };
-            }
-
-          })
-        );
-        setPayloads(payloadsWithContent);
-      }
-    } catch (error) {
-      console.error('Failed to load payloads:', error);
-      setPayloads([]);
-    } finally {
-      setIsLoadingPayloads(false);
-    }
-  }, [setIsLoadingPayloads, setPayloads]);
 
   // Load hooked apps
   const loadHookedApps = useCallback(async () => {
@@ -526,11 +452,6 @@ export default function Injector() {
     }
   }, [selectedApp, consoleHistory, selectedProcess, setConsoleHistory, setConsoleHistoryIndex, setConsoleOutput]);
 
-  // Load payloads on mount
-  useEffect(() => {
-    loadPayloads();
-  }, [loadPayloads]);
-
   // Load hooked apps on mount and periodically
   useEffect(() => {
     loadHookedApps();
@@ -757,7 +678,7 @@ export default function Injector() {
                           <MenuItem value="">
                             <em>Select a payload...</em>
                           </MenuItem>
-                          {contextPayloads.map((payload) => (
+                          {payloads.map((payload) => (
                             <MenuItem key={payload.name} value={payload.name}>
                               {payload.name} ({payload.process})
                             </MenuItem>
@@ -781,7 +702,7 @@ export default function Injector() {
                     </Box>
                     {selectedPayload && (
                       <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                        {contextPayloads.find(p => p.name === selectedPayload)?.description}
+                        {payloads.find(p => p.name === selectedPayload)?.description}
                       </Typography>
                     )}
                   </Box>
@@ -932,7 +853,6 @@ export default function Injector() {
               {/* Terminal Input */}
               <Box sx={{ 
                 display: 'flex',
-                alignItems: 'flex-start',
                 gap: 1,
                 backgroundColor: theme.palette.background.terminal,
                 borderRadius: 1,
@@ -1033,7 +953,7 @@ export default function Injector() {
                 <Panel defaultSize={50} minSize={20}>
                   <PanelGroup direction="vertical">
                     <Panel defaultSize={30} minSize={20} maxSize={30}>
-                      <AppInfo appConfig={selectedAppConfig} />
+                      <AppInfo appConfig={selectedApp} />
                     </Panel>
                     <PanelResizeHandle style={{ height: 10, backgroundColor: theme.palette.background.nav }} />
                     <Panel minSize={20}>

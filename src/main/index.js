@@ -86,13 +86,7 @@ app.whenReady().then(async () => {
   electronApp.setAppUserModelId('com.spektros')
 
   // Initialize payloads directory
-  try {
-    await initializePayloads();
-  } catch (error) {
-    console.error('❌ Failed to initialize payloads:', error);
-    // Continue - app can function without payloads
-  }
-
+ 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
@@ -176,25 +170,6 @@ app.whenReady().then(async () => {
     } catch (error) {
       console.error('Replace failed:', error)
       return { success: false, error: error.message }
-    }
-  })
-
-  // Directory Management IPC Handlers
-  ipcMain.handle('app:getPayloadsPath', async () => {
-    try {
-      return { success: true, path: getPayloadsPath() };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  })
-
-  ipcMain.handle('app:openPayloadsFolder', async () => {
-    try {
-      const payloadsPath = getPayloadsPath();
-      await shell.openPath(payloadsPath);
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
     }
   })
 
