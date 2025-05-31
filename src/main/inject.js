@@ -356,10 +356,7 @@ async function setupInjection(asarPath) {
   }
 }
 
-/**
- * Main injection function (for additional payloads after setup)
- */
-async function injectPayload(payloadPath, asarPath) {
+async function injectPayload(payloadPath, asarPath, customTarget = null) {
   let extractDir = null;
   
   try {
@@ -380,18 +377,21 @@ async function injectPayload(payloadPath, asarPath) {
       throw new Error('Payload file is empty');
     }
     
-    // Create backup
-    // const backupPath = await createBackup(asarPath);
-    //console.log(`📦 Created backup: ${backupPath}`);
-    
     // Extract ASAR
     extractDir = await extractAsar(asarPath);
     console.log(`📂 Extracted ASAR to: ${extractDir}`);
     
-    // Find main script
-    const mainScript = await findMainScript(extractDir);
+    let mainScript
+    if(customTarget) { 
+      // If custom target is specified, use it directly
+      mainScript = customTarget;
+      console.log(`🔍 Using custom target path: ${mainScript}`);
+    }else{
+      mainScript = await findMainScript(extractDir);
+      console.log(`🎯 Found main script: ${mainScript}`);
+    }
+    
     const scriptPath = join(extractDir, mainScript);
-    console.log(`🎯 Found main script: ${mainScript}`);
     
     // Inject payload
     await injectPayloadIntoScript(scriptPath, payloadContent);
@@ -403,7 +403,6 @@ async function injectPayload(payloadPath, asarPath) {
     
     return {
       success: true,
-      //backupPath,
       injectedFile: mainScript,
       message: 'Payload injected successfully'
     };

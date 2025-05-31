@@ -9,7 +9,6 @@ import {
   searchFiles, 
   replaceInFiles 
 } from './analysis'
-import { initializePayloads, getPayloadsPath } from './startup'
 import { 
   setupInjection,  // NEW: Import the setup function
   injectPayload,
@@ -297,204 +296,26 @@ app.whenReady().then(async () => {
       const defaultOptions = {
         properties: ['openFile'],
         filters: [
-          { name: 'ASAR Files', extensions: ['asar'] },
-          { name: 'AppImage Files', extensions: ['AppImage', 'appimage'] },
-          { name: 'All Files', extensions: ['*'] }
-        ]
-      }
-      
-      console.log('🔄 Opening file dialog with options:', { ...defaultOptions, ...options });
-      
-      // Use a separate process for file dialog to avoid mounting issues
-      const { spawn } = require('child_process');
-      const path = require('path');
-      const os = require('os');
-      const fs = require('fs');
-      
-      // Create a temporary script that will handle the file dialog
-      const dialogScript = `
-        const { app, dialog } = require('electron');
-        
-        app.whenReady().then(async () => {
-          try {
-            const result = await dialog.showOpenDialog({
-              properties: ['openFile'],
-              filters: [
-                { name: 'ASAR Files', extensions: ['asar'] },
-                { name: 'AppImage Files', extensions: ['AppImage', 'appimage'] },
-                { name: 'All Files', extensions: ['*'] }
-              ]
-            });
-            
-            if (result.canceled) {
-              console.log('DIALOG_RESULT:CANCELED');
-            } else {
-              console.log('DIALOG_RESULT:' + result.filePaths[0]);
-            }
-            
-            // Immediately exit to release file handles
-            process.exit(0);
-          } catch (error) {
-            console.log('DIALOG_ERROR:' + error.message);
-            process.exit(1);
-          }
-        });
-        
-        // Force exit after 30 seconds to prevent hanging
-        setTimeout(() => {
-          console.log('DIALOG_ERROR:Timeout');
-          process.exit(1);
-        }, 30000);
-      `;
-      
-      // Write the script to a temporary file
-      const tempScriptPath = path.join(os.tmpdir(), `dialog-${Date.now()}.js`);
-      fs.writeFileSync(tempScriptPath, dialogScript);
-      
-      console.log('📄 Created temporary dialog script:', tempScriptPath);
-      
-      // Spawn the separate electron process
-      const dialogProcess = spawn(process.execPath, [tempScriptPath], {
-        stdio: 'pipe',
-        detached: false
+          { name: 'ASAR Files', extensions: ['asar'] }
+        ],
+        multiSelections: false
+      };
+
+      const result = await dialog.showOpenDialog({
+        ...defaultOptions,
+        ...options
       });
-      
-      let dialogOutput = '';
-      let dialogError = '';
-      
-      dialogProcess.stdout.on('data', (data) => {
-        dialogOutput += data.toString();
-      });
-      
-      dialogProcess.stderr.on('data', (data) => {
-        dialogError += data.toString();
-      });
-      
-      // Wait for the dialog process to complete
-      const dialogResult = await new Promise((resolve, reject) => {
-        dialogProcess.on('close', (code) => {
-          console.log(`🔄 Dialog process exited with code: ${code}`);
-          console.log(`📋 Dialog output: ${dialogOutput}`);
-          
-          if (dialogError) {
-            console.log(`⚠️  Dialog stderr: ${dialogError}`);
-          }
-          
-          // Parse the result from stdout
-          const lines = dialogOutput.split('\n');
-          for (const line of lines) {
-            if (line.startsWith('DIALOG_RESULT:')) {
-              const result = line.substring('DIALOG_RESULT:'.length);
-              if (result === 'CANCELED') {
-                resolve({ canceled: true });
-              } else {
-                resolve({ filePath: result });
-              }
-              return;
-            } else if (line.startsWith('DIALOG_ERROR:')) {
-              const error = line.substring('DIALOG_ERROR:'.length);
-              reject(new Error(error));
-              return;
-            }
-          }
-          
-          // If no clear result found
-          if (code === 0) {
-            resolve({ canceled: true });
-          } else {
-            reject(new Error(`Dialog process failed with code ${code}`));
-          }
-        });
-        
-        dialogProcess.on('error', (error) => {
-          console.error('❌ Dialog process error:', error);
-          reject(error);
-        });
-        
-        // Kill process after timeout
-        setTimeout(() => {
-          if (!dialogProcess.killed) {
-            console.log('⏱️  Dialog process timeout, killing...');
-            dialogProcess.kill('SIGKILL');
-            reject(new Error('Dialog process timeout'));
-          }
-        }, 35000);
-      });
-      
-      // Clean up temporary script
-      try {
-        fs.unlinkSync(tempScriptPath);
-        console.log('🗑️  Cleaned up temporary script');
-      } catch (cleanupError) {
-        console.warn('⚠️  Could not cleanup temp script:', cleanupError.message);
-      }
-      
-      // Force kill any remaining dialog processes (nuclear option)
-      try {
-        dialogProcess.kill('SIGKILL');
-        console.log('💀 Force killed dialog process to ensure file release');
-      } catch (killError) {
-        // Process might already be dead
-        console.log('💀 Dialog process already terminated');
-      }
-      
-      if (dialogResult.canceled) {
+
+      console.log('File path: ', result.filePaths[0]);
+
+      if (result.canceled) {
         return { success: false, canceled: true };
-      }
-      
-      const selectedPath = dialogResult.filePath;
-      console.log('✅ Selected file path via separate process:', selectedPath);
-      
-      // Add additional delay to ensure file handles are released
-      console.log('⏱️  Waiting for file handles to be fully released...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Verify the file is accessible and not mounted
-      if (!fs.existsSync(selectedPath)) {
-        console.error('❌ Selected file does not exist:', selectedPath);
-        return { success: false, error: `Selected file does not exist: ${selectedPath}` };
-      }
-      
-      if (selectedPath.endsWith('.asar')) {
-        const stats = fs.statSync(selectedPath);
-        console.log(`📊 ASAR file stats after separate process: ${stats.size} bytes, isFile: ${stats.isFile()}, isDirectory: ${stats.isDirectory()}`);
-        
-        if (stats.isDirectory() || stats.size === 0) {
-          console.log('⚠️  ASAR still appears mounted even after separate process');
-          // Return the path anyway - let the injection logic handle it
-        } else {
-          console.log('✅ ASAR appears properly unmounted via separate process');
-        }
-      }
-      
-      console.log('✅ File dialog completed via separate process');
-      return { success: true, filePath: selectedPath };
-      
-    } catch (error) {
-      console.error('❌ Separate process file dialog failed:', error);
-      
-      // Fallback to regular dialog if separate process fails
-      console.log('🔄 Falling back to regular dialog...');
-      
-      try {
-        const result = await dialog.showOpenDialog({
-          properties: ['openFile'],
-          filters: [
-            { name: 'ASAR Files', extensions: ['asar'] },
-            { name: 'AppImage Files', extensions: ['AppImage', 'appimage'] },
-            { name: 'All Files', extensions: ['*'] }
-          ]
-        });
-        
-        if (result.canceled) {
-          return { success: false, canceled: true };
-        }
-        
+      }else{
         return { success: true, filePath: result.filePaths[0] };
-      } catch (fallbackError) {
-        console.error('❌ Fallback dialog also failed:', fallbackError);
-        return { success: false, error: fallbackError.message };
       }
+    } catch (error) {
+      console.error('❌ File dialog failed:', error);
+      return { success: false, error: error.message };
     }
   });
 

@@ -49,6 +49,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import payloads from '../components/injector/Payloads';
 import { useApi } from '../contexts/ApiContext';
 import { v4 as uuidv4 } from 'uuid';
+import TerminalPanel from '../components/injector/TerminalPanel';
 
 export default function Injector() {
   const theme = useTheme();
@@ -81,7 +82,10 @@ export default function Injector() {
     saveAppSettings,
   } = useInjector();
 
-  const { injectHook } = useApi();
+  const { 
+    injectHook,
+    openFileDialog
+   } = useApi();
 
   // Local state that doesn't need to persist between page changes
   const [isSetupLoading, setIsSetupLoading] = React.useState(false);
@@ -102,6 +106,8 @@ export default function Injector() {
   });
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [pendingConfig, setPendingConfig] = useState(asarConfig);
+  const [useCustomTargetPath, setUseCustomTargetPath] = useState(false);
+  const [customTargetPath, setCustomTargetPath] = useState(null);
 
   // Get the selected app's config from hookedAppSettings
   const selectedAppConfig = selectedApp?.uuid ? hookedAppSettings[selectedApp.uuid] : null;
@@ -142,14 +148,9 @@ export default function Injector() {
   const handleSelectAsar = useCallback(async () => {
     try {
       console.log('🔄 Opening ASAR file dialog...');
-      const result = await window.api.fileDialog.openFile({
-        filters: [
-          { name: 'ASAR Files', extensions: ['asar'] },
-          { name: 'All Files', extensions: ['*'] }
-        ],
-        properties: ['openFile']
-      });
-      console.log('📁 File dialog result:', result);
+      const result = await openFileDialog(); // <-- Add await here
+
+      console.log('[INJECTOR] File dialog result:', result);
       if (result && result.success && result.filePath) {
         console.log('✅ Selected ASAR file:', result.filePath);
         setAsarPath(result.filePath);
@@ -190,7 +191,9 @@ export default function Injector() {
         uuid: asarUuid,
         ...asarConfig
       };
-      const result = await injectHook(config);
+
+      const result = await injectHook(config, customTargetPath);
+
       if (result.success) {
         setIsSetupComplete(true);
         setSetupStatus({
@@ -627,7 +630,7 @@ export default function Injector() {
                       )}
                       {hookedApps.map(app => (
                         <MenuItem key={app.uuid} value={app.uuid}>
-                          {app.name} ({app.uuid})
+                          {app.name} ({app.uuid.substring(0, 5)} - {app.ip}:{app.port})
                         </MenuItem>
                       ))}
                     </Select>
@@ -645,281 +648,25 @@ export default function Injector() {
               backgroundColor: theme.palette.background.default,
               minHeight: 0,
             }}>
-              {/* Payload Launcher Section */}
-              <Card sx={{ mb: 4, backgroundColor: theme.palette.background.content }}>
-                <CardContent sx={{ p: 2, '&:last-child': { pb: 8 } }}>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2}}>
-                      <Typography variant="subtitle2" sx={{ color: theme.palette.text.primary }}>
-                        Pre-built Payloads
-                      </Typography>
-                      <FormControl size="small" sx={{ minWidth: 300 }}>
-                        <Select
-                          value={selectedPayload}
-                          onChange={handlePayloadSelect}
-                          displayEmpty
-                          sx={{
-                            backgroundColor: theme.palette.background.paper,
-                            color: theme.palette.text.primary,
-                            '& .MuiOutlinedInput-notchedOutline': {
-                              borderColor: theme.palette.background.nav,
-                            },
-                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                              borderColor: theme.palette.background.sidebar,
-                            },
-                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                              borderColor: theme.palette.color.blue,
-                            },
-                            '& .MuiSelect-icon': {
-                              color: theme.palette.text.primary,
-                            },
-                          }}
-                        >
-                          <MenuItem value="">
-                            <em>Select a payload...</em>
-                          </MenuItem>
-                          {payloads.map((payload) => (
-                            <MenuItem key={payload.name} value={payload.name}>
-                              {payload.name} ({payload.process})
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        onClick={handleSendPayload}
-                        disabled={!selectedPayload}
-                        sx={{
-                          backgroundColor: theme.palette.color.cyan,
-                          '&:hover': {
-                            backgroundColor: theme.palette.color.cyanDark,
-                          },
-                        }}
-                      >
-                        Send Payload
-                      </Button>
-                    </Box>
-                    {selectedPayload && (
-                      <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                        {payloads.find(p => p.name === selectedPayload)?.description}
-                      </Typography>
-                    )}
-                  </Box>
-                </CardContent>
-              </Card>
-
-              {/* Terminal Header */}
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'space-between', 
-                mb: 1 
-              }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Typography variant="subtitle2" sx={{ color: theme.palette.text.primary }}>
-                    Terminal
-                  </Typography>
-                  <FormControl size="small" sx={{ minWidth: 120 }}>
-                    <Select
-                      value={selectedProcess}
-                      onChange={(e) => setSelectedProcess(e.target.value)}
-                      sx={{
-                        backgroundColor: theme.palette.background.paper,
-                        color: theme.palette.text.primary,
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderColor: theme.palette.background.nav,
-                        },
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: theme.palette.background.sidebar,
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: theme.palette.color.blue,
-                        },
-                        '& .MuiSelect-icon': {
-                          color: theme.palette.text.primary,
-                        },
-                      }}
-                    >
-                      <MenuItem value="renderer">Renderer</MenuItem>
-                      <MenuItem value="main">Main</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Box>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => {
-                    setConsoleOutput([]);
-                    setConsoleHistory([]);
-                    localStorage.removeItem('consoleHistory');
-                  }}
-                >
-                  Clear
-                </Button>
-              </Box>
-              
-              {/* Terminal Output */}
-              <Box sx={{ 
-                flexGrow: 1,
-                mb: 2,
-                height: '100%',
-                overflowY: 'auto',
-                backgroundColor: theme.palette.background.terminal,
-                borderRadius: 1,
-                p: 2,
-                fontFamily: 'Consolas, Monaco, monospace',
-                fontSize: '14px',
-                color: theme.palette.text.primary,
-                display: 'flex',
-                flexDirection: 'column',
-                '&::-webkit-scrollbar': {
-                  width: '8px',
-                },
-                '&::-webkit-scrollbar-track': {
-                  backgroundColor: theme.palette.background.nav,
-                },
-                '&::-webkit-scrollbar-thumb': {
-                  backgroundColor: theme.palette.background.sidebar,
-                  borderRadius: '4px',
-                },
-              }}>
-                <Box sx={{ 
-                  flexGrow: 1,
-                  overflowY: 'auto',
-                  '&::-webkit-scrollbar': {
-                    width: '8px',
-                  },
-                  '&::-webkit-scrollbar-track': {
-                    backgroundColor: theme.palette.background.nav,
-                  },
-                  '&::-webkit-scrollbar-thumb': {
-                    backgroundColor: theme.palette.background.sidebar,
-                    borderRadius: '4px',
-                  },
-                }}>
-                  {consoleOutput.map((entry, index) => (
-                    <Box key={index} sx={{ mb: 1 }}>
-                      {entry.command && (
-                        <Box sx={{ 
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 1,
-                          mb: 0.5,
-                        }}>
-                          <Box sx={{ 
-                            color: theme.palette.color.blue,
-                            '&::before': {
-                              content: '"> "',
-                              color: theme.palette.color.blue,
-                            }
-                          }}>
-                            {entry.command}
-                          </Box>
-                          {entry.status === 'pending' && (
-                            <PendingIcon 
-                              sx={{ 
-                                color: theme.palette.color.yellow,
-                                fontSize: '1rem',
-                                animation: 'spin 1s linear infinite',
-                                '@keyframes spin': {
-                                  '0%': { transform: 'rotate(0deg)' },
-                                  '100%': { transform: 'rotate(360deg)' }
-                                }
-                              }} 
-                            />
-                          )}
-                          {entry.status === 'success' && (
-                            <CheckIcon sx={{ color: theme.palette.color.green, fontSize: '1rem' }} />
-                          )}
-                          {entry.status === 'error' && (
-                            <ErrorIcon sx={{ color: theme.palette.color.red, fontSize: '1rem' }} />
-                          )}
-                        </Box>
-                      )}
-                      <Box sx={{ 
-                        color: entry.status === 'error' ? theme.palette.color.red : theme.palette.text.primary,
-                        pl: 2,
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word'
-                      }}>
-                        {entry.output}
-                      </Box>
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-
-              {/* Terminal Input */}
-              <Box sx={{ 
-                display: 'flex',
-                gap: 1,
-                backgroundColor: theme.palette.background.terminal,
-                borderRadius: 1,
-                p: 2,
-                flexShrink: 0, 
-              }}>
-                <Box sx={{ 
-                  color: theme.palette.color.blue,
-                  pt: 1,
-                  '&::before': {
-                    content: '"> "',
-                    color: theme.palette.color.blue,
-                  }
-                }} />
-                <TextField
-                  fullWidth
-                  multiline
-                  maxRows={4}
-                  placeholder="Enter JavaScript code to execute..."
-                  value={consoleInput}
-                  onChange={(e) => setConsoleInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      if (consoleInput.trim()) {
-                        handleExecuteCode(consoleInput);
-                        setConsoleInput('');
-                      }
-                    } else if (e.key === 'ArrowUp') {
-                      e.preventDefault();
-                      if (consoleHistoryIndex < consoleHistory.length - 1) {
-                        setConsoleHistoryIndex(prev => prev + 1);
-                        setConsoleInput(consoleHistory[consoleHistoryIndex + 1]);
-                      }
-                    } else if (e.key === 'ArrowDown') {
-                      e.preventDefault();
-                      if (consoleHistoryIndex > 0) {
-                        setConsoleHistoryIndex(prev => prev - 1);
-                        setConsoleInput(consoleHistory[consoleHistoryIndex - 1]);
-                      } else if (consoleHistoryIndex === 0) {
-                        setConsoleHistoryIndex(-1);
-                        setConsoleInput('');
-                      }
-                    }
-                  }}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: 'transparent',
-                      '& fieldset': {
-                        borderColor: 'transparent',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: 'transparent',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: 'transparent',
-                      },
-                      '& textarea': {
-                        fontFamily: 'Consolas, Monaco, monospace',
-                        fontSize: '14px',
-                        lineHeight: 1.5,
-                        color: theme.palette.text.primary,
-                      }
-                    }
-                  }}
-                />
-              </Box>
+              <TerminalPanel
+                payloads={payloads}
+                selectedPayload={selectedPayload}
+                setSelectedPayload={setSelectedPayload}
+                handleSendPayload={handleSendPayload}
+                consoleInput={consoleInput}
+                setConsoleInput={setConsoleInput}
+                consoleOutput={consoleOutput}
+                setConsoleOutput={setConsoleOutput}
+                consoleHistory={consoleHistory}
+                consoleHistoryIndex={consoleHistoryIndex}
+                setConsoleHistory={setConsoleHistory}
+                setConsoleHistoryIndex={setConsoleHistoryIndex}
+                theme={theme}
+                isSending={isInjecting}
+                selectedProcess={selectedProcess}
+                setSelectedProcess={setSelectedProcess}
+                appConfig={selectedAppConfig}
+              />
             </Box>
           </Box>
         </Panel>
@@ -991,7 +738,34 @@ export default function Injector() {
       <Dialog open={showConfigModal} onClose={handleConfigCancel}>
         <DialogTitle>Configure Injection Parameters</DialogTitle>
         <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 350 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 350, mt: 1 }}>
+            <Container sx={{ 
+              display: 'flex', 
+              flexDirection: 'row', 
+              gap: 2, 
+              alignItems: 'center', 
+            }}>
+              <Typography 
+                variant="subtitle1" 
+                sx={{ color: theme.palette.text.primary, display: 'flex', alignItems: 'center', mb: 0, padding: 0}}
+              >
+                Use Custom Target Path
+              </Typography>
+              <Switch
+                value="customTargetPath"
+                checked={useCustomTargetPath}
+                onChange={() => setUseCustomTargetPath(!useCustomTargetPath)}
+                sx={{ mb: 0 }}
+              />
+            </Container>
+            { useCustomTargetPath && (
+              <TextField
+                label="Custom Target Path"
+                value={customTargetPath || ''}
+                onChange={e => setCustomTargetPath(e.target.value)}
+                fullWidth
+              />
+            )}
             <TextField
               label="Debug Port"
               type="number"
