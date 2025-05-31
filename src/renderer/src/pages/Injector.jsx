@@ -82,7 +82,10 @@ export default function Injector() {
     saveAppSettings,
   } = useInjector();
 
-  const { injectHook } = useApi();
+  const { 
+    injectHook,
+    openFileDialog
+   } = useApi();
 
   // Local state that doesn't need to persist between page changes
   const [isSetupLoading, setIsSetupLoading] = React.useState(false);
@@ -103,6 +106,8 @@ export default function Injector() {
   });
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [pendingConfig, setPendingConfig] = useState(asarConfig);
+  const [useCustomTargetPath, setUseCustomTargetPath] = useState(false);
+  const [customTargetPath, setCustomTargetPath] = useState(null);
 
   // Get the selected app's config from hookedAppSettings
   const selectedAppConfig = selectedApp?.uuid ? hookedAppSettings[selectedApp.uuid] : null;
@@ -143,14 +148,9 @@ export default function Injector() {
   const handleSelectAsar = useCallback(async () => {
     try {
       console.log('🔄 Opening ASAR file dialog...');
-      const result = await window.api.fileDialog.openFile({
-        filters: [
-          { name: 'ASAR Files', extensions: ['asar'] },
-          { name: 'All Files', extensions: ['*'] }
-        ],
-        properties: ['openFile']
-      });
-      console.log('📁 File dialog result:', result);
+      const result = await openFileDialog(); // <-- Add await here
+
+      console.log('[INJECTOR] File dialog result:', result);
       if (result && result.success && result.filePath) {
         console.log('✅ Selected ASAR file:', result.filePath);
         setAsarPath(result.filePath);
@@ -191,7 +191,9 @@ export default function Injector() {
         uuid: asarUuid,
         ...asarConfig
       };
-      const result = await injectHook(config);
+
+      const result = await injectHook(config, customTargetPath);
+
       if (result.success) {
         setIsSetupComplete(true);
         setSetupStatus({
@@ -736,7 +738,34 @@ export default function Injector() {
       <Dialog open={showConfigModal} onClose={handleConfigCancel}>
         <DialogTitle>Configure Injection Parameters</DialogTitle>
         <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 350 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 350, mt: 1 }}>
+            <Container sx={{ 
+              display: 'flex', 
+              flexDirection: 'row', 
+              gap: 2, 
+              alignItems: 'center', 
+            }}>
+              <Typography 
+                variant="subtitle1" 
+                sx={{ color: theme.palette.text.primary, display: 'flex', alignItems: 'center', mb: 0, padding: 0}}
+              >
+                Use Custom Target Path
+              </Typography>
+              <Switch
+                value="customTargetPath"
+                checked={useCustomTargetPath}
+                onChange={() => setUseCustomTargetPath(!useCustomTargetPath)}
+                sx={{ mb: 0 }}
+              />
+            </Container>
+            { useCustomTargetPath && (
+              <TextField
+                label="Custom Target Path"
+                value={customTargetPath || ''}
+                onChange={e => setCustomTargetPath(e.target.value)}
+                fullWidth
+              />
+            )}
             <TextField
               label="Debug Port"
               type="number"

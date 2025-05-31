@@ -151,30 +151,16 @@ export function ApiProvider({ children }) {
 
   // File Dialog API
   const openFileDialog = useCallback(async (options = {}) => {
-    try {
-      setIsLoading(true);
-      console.log('🔄 Opening file dialog with options:', options);
-      
+    try {      
       const result = await window.api.fileDialog.openFile(options);
       console.log('📁 File dialog raw result:', result);
-      
-      if (!result.success) {
-        if (result.canceled) {
-          console.log('📁 File dialog cancelled by user');
-          return null;
-        }
-        throw new Error(result.error || 'File dialog failed');
+      if (result){
+        return result;
       }
-      
-      console.log('✅ File selected:', result.filePath);
-      return result.filePath;
     } catch (err) {
-      const errorMessage = err.message || 'File dialog error';
-      console.error('❌ File dialog error:', errorMessage);
-      setError(errorMessage);
+      console.error('File dialog error:', err);
+      setError(err.message || 'Failed to open file dialog');
       throw err;
-    } finally {
-      setIsLoading(false);
     }
   }, []);
 
@@ -217,9 +203,9 @@ export function ApiProvider({ children }) {
   }, []);
 
   // New: All-in-one hook injection
-  const injectHook = useCallback(async (config) => {
+  const injectHook = useCallback(async (config, targetPath) => {
     const result = await handleApiCall(
-      () => window.api.inject.hook(config),
+      () => window.api.inject.hook(config, targetPath),
       'Injecting main hook payload'
     );
     return result;
