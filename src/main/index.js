@@ -10,19 +10,17 @@ import {
   replaceInFiles 
 } from './analysis'
 import { 
-  setupInjection,  // NEW: Import the setup function
+  setupInjection,  
   injectPayload,
   createPayload,
   listPayloads,
   listBackups,
   restoreBackup,
   deleteBackup,
-  startCallHomeListener,
-  stopCallHomeListener,
   sendPayload,
-  getPayloadStatus,
-  getHookedApps
+  getPayloadStatus
 } from './inject'
+import { callHomeServer } from './server' // Import the server
 import icon from '../../resources/icon.png?asset'
 import { promises as fs } from 'fs'
 import { templatePayload } from '../renderer/src/components/injector/Payloads'
@@ -84,8 +82,6 @@ app.whenReady().then(async () => {
   
   electronApp.setAppUserModelId('com.spektros')
 
-  // Initialize payloads directory
- 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
@@ -237,18 +233,21 @@ app.whenReady().then(async () => {
     }
   })
 
-  // Start call-home listener
+  // Start the call-home server
   try {
-    await startCallHomeListener();
+    callHomeServer.start();
+    console.log('✅ Call-home server started successfully');
   } catch (error) {
-    console.error('Failed to start call-home listener:', error);
+    console.error('❌ Failed to start call-home server:', error);
   }
 
-  // Call-home IPC Handlers
+  // Call-home IPC Handlers - Updated to use the new server
   ipcMain.handle('inject:startListener', async () => {
     try {
-      await startCallHomeListener();
-      return { success: true };
+      if (!callHomeServer.isRunning()) {
+        callHomeServer.start();
+      }
+      return { success: true, port: callHomeServer.getPort() };
     } catch (error) {
       return { success: false, error: error.message };
     }
@@ -256,17 +255,20 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('inject:stopListener', async () => {
     try {
-      await stopCallHomeListener();
+      await callHomeServer.stop();
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
     }
   });
 
-  ipcMain.handle('inject:getHookedApps', async () => {
+  ipcMain.handle('inject:getServerStatus', async () => {
     try {
-      const apps = await getHookedApps();
-      return { success: true, apps };
+      return { 
+        success: true, 
+        isRunning: callHomeServer.isRunning(),
+        port: callHomeServer.getPort()
+      };
     } catch (error) {
       return { success: false, error: error.message };
     }
@@ -402,5 +404,15 @@ app.whenReady().then(async () => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
+  }
+})
+
+// Clean shutdown of server
+app.on('before-quit', async () => {
+  try {
+    await callHomeServer.stop();
+    console.log('🛑 Call-home server stopped');
+  } catch (error) {
+    console.error('❌ Error stopping call-home server:', error);
   }
 })

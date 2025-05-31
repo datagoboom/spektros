@@ -26,6 +26,7 @@
     "@mui/icons-material": "^7.1.0",
     "@mui/material": "^7.1.0",
     "@mui/x-tree-view": "^8.4.0",
+    "express": "^5.1.0",
     "js-beautify": "^1.15.4",
     "micromatch": "^4.0.8",
     "prism-react-editor": "^2.0.0",

@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 
 const InjectorContext = createContext(null);
 
@@ -11,11 +10,9 @@ export function InjectorProvider({ children }) {
   const [injectionStatus, setInjectionStatus] = useState(null);
   const [isInjecting, setIsInjecting] = useState(false);
 
-  // Setup and app state
+  // Setup state
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [setupStatus, setSetupStatus] = useState(null);
-  const [hookedApps, setHookedApps] = useState([]);
-  const [selectedApp, setSelectedApp] = useState(null);
 
   // Payloads
   const [payloads, setPayloads] = useState([]);
@@ -48,58 +45,32 @@ export function InjectorProvider({ children }) {
   const [ipcIsUploading, setIpcIsUploading] = useState(false);
   const [ipcExpandedRow, setIpcExpandedRow] = useState(null);
 
-  // Multi-app hooked app settings
-  const [hookedAppSettings, setHookedAppSettings] = useState(() => {
-    const saved = localStorage.getItem('hookedAppSettings');
-    return saved ? JSON.parse(saved) : {};
-  });
+  // App settings state
+  const [hookedAppSettings, setHookedAppSettings] = useState({});
 
-  // Helper to get next available app main port (starts at 10100)
-  const getNextAppPort = (settings) => {
-    const ports = Object.values(settings).map(app => app.port || 0);
-    return Math.max(10099, ...ports) + 1;
-  };
-
-  // Helper to get next available ipc_monitor_port (starts at 10500)
-  const getNextIpcMonitorPort = (settings) => {
-    const ports = Object.values(settings).map(app => app.ipc_monitor_port || 0);
-    return Math.max(10499, ...ports) + 1;
-  };
-
-  // New: Helper to get next available port from hooked apps
-  const getNextAvailablePort = (startPort = 10100) => {
-    const usedPorts = new Set(hookedApps.map(app => app.debugPort || app.port));
-    let port = startPort;
+  // Get next available IPC monitor port
+  const getNextIpcMonitorPort = useCallback((settings) => {
+    const usedPorts = new Set(Object.values(settings).map(s => s.ipc_monitor_port));
+    let port = 11100;
     while (usedPorts.has(port)) {
       port++;
     }
     return port;
-  };
-
-  // Add or update app settings
-  // Usage: saveAppSettings({ name, ip }) // port and ipc_monitor_port auto-assigned
-  const saveAppSettings = useCallback((app) => {
-    setHookedAppSettings(prev => {
-      const id = app.uuid || uuidv4();
-      const port = app.port || getNextAppPort(prev);
-      const ipc_monitor_port = app.ipc_monitor_port || getNextIpcMonitorPort(prev);
-      const updated = { ...prev, [id]: { ...app, uuid: id, port, ipc_monitor_port } };
-      localStorage.setItem('hookedAppSettings', JSON.stringify(updated));
-      return updated;
-    });
-  }, [getNextAppPort, getNextIpcMonitorPort]);
-
-  // Remove app settings
-  const removeAppSettings = useCallback((uuid) => {
-    setHookedAppSettings(prev => {
-      const updated = { ...prev };
-      delete updated[uuid];
-      localStorage.setItem('hookedAppSettings', JSON.stringify(updated));
-      return updated;
-    });
   }, []);
 
-  // Actions (examples, expand as needed)
+  // Save app settings
+  const saveAppSettings = useCallback((app) => {
+    if (!app?.uuid) return;
+    setHookedAppSettings(prev => ({
+      ...prev,
+      [app.uuid]: {
+        ...prev[app.uuid],
+        ...app
+      }
+    }));
+  }, []);
+
+  // Actions
   const clearInjectionStatus = useCallback(() => setInjectionStatus(null), []);
   const clearAsarPath = useCallback(() => {
     setAsarPath('');
@@ -138,11 +109,9 @@ export function InjectorProvider({ children }) {
     setInjectionStatus(null);
     setIsInjecting(false);
 
-    // Setup and app state
+    // Setup state
     setIsSetupComplete(false);
     setSetupStatus(null);
-    setHookedApps([]);
-    setSelectedApp(null);
 
     // Payloads
     setPayloads([]);
@@ -174,6 +143,9 @@ export function InjectorProvider({ children }) {
     setIpcError(null);
     setIpcIsUploading(false);
     setIpcExpandedRow(null);
+
+    // App settings
+    setHookedAppSettings({});
   }, []);
 
   const value = {
@@ -185,8 +157,6 @@ export function InjectorProvider({ children }) {
     isInjecting, setIsInjecting,
     isSetupComplete, setIsSetupComplete,
     setupStatus, setSetupStatus,
-    hookedApps, setHookedApps,
-    selectedApp, setSelectedApp,
     payloads, setPayloads,
     isLoadingPayloads, setIsLoadingPayloads,
     consoleInput, setConsoleInput,
@@ -215,13 +185,10 @@ export function InjectorProvider({ children }) {
     ipcIsUploading, setIpcIsUploading,
     ipcExpandedRow, setIpcExpandedRow,
 
-    // Multi-app hooked app settings
+    // App settings
     hookedAppSettings,
-    saveAppSettings,
-    removeAppSettings,
-    getNextAppPort,
     getNextIpcMonitorPort,
-    getNextAvailablePort,
+    saveAppSettings,
 
     // Actions
     clearInjectionStatus,
@@ -230,7 +197,6 @@ export function InjectorProvider({ children }) {
     clearIpcTraffic,
     clearIpcState,
     clearAll,
-    // ...add more actions here
   };
 
   return (
