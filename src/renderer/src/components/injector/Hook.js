@@ -15,14 +15,14 @@ const hook = {
       ENABLE_CALL_HOME: {{ ENABLE_CALL_HOME }}
   };
   
-  console.log('[DEBUG-TOOL] Initializing production debug interface...');
+  console.log('[SPEKTROS-HOOK] Initializing production debug interface...');
   
   (function() {
       'use strict';
       
       // Prevent multiple instances
       if (global._debugToolLoaded) {
-          console.log('[DEBUG-TOOL] Already loaded, skipping initialization');
+          console.log('[SPEKTROS-HOOK] Already loaded, skipping initialization');
           return;
       }
       global._debugToolLoaded = true;
@@ -36,12 +36,15 @@ const hook = {
           http = require('http');
           crypto = require('crypto');
       } catch (error) {
-          console.error('[DEBUG-TOOL] Failed to load required modules:', error.message);
+          console.error('[SPEKTROS-HOOK] Failed to load required modules:', error.message);
           return;
       }
       
       // Job storage - results are deleted after retrieval
       const jobs = new Map();
+      
+      // Global variables for IPC monitoring
+      global.ipc_monitor_port = null;
       
       // Utility functions
       const utils = {
@@ -65,7 +68,7 @@ const hook = {
           
           logRequest: (method, path, jobId = null) => {
               const timestamp = new Date().toISOString();
-              console.log(\`[DEBUG-TOOL] \${timestamp} \${method} \${path}\${jobId ? \` (Job: \${jobId})\` : ''}\`);
+              console.log(\`[SPEKTROS-HOOK] \${timestamp} \${method} \${path}\${jobId ? \` (Job: \${jobId})\` : ''}\`);
           }
       };
       
@@ -108,7 +111,7 @@ const hook = {
                       completed: Date.now()
                   });
                   
-                  console.log(\`[DEBUG-TOOL] Job \${jobId} completed with status: \${result.status}\`);
+                  console.log(\`[SPEKTROS-HOOK] Job \${jobId} completed with status: \${result.status}\`);
               }
           },
           
@@ -140,7 +143,7 @@ const hook = {
               }
               
               if (cleaned > 0) {
-                  console.log(\`[DEBUG-TOOL] Cleaned up \${cleaned} old jobs\`);
+                  console.log(\`[SPEKTROS-HOOK] Cleaned up \${cleaned} old jobs\`);
               }
           }
       };
@@ -149,7 +152,7 @@ const hook = {
       const executors = {
           main: async (code, jobId) => {
               try {
-                  console.log(\`[DEBUG-TOOL] Executing in main process (Job: \${jobId})\`);
+                  console.log(\`[SPEKTROS-HOOK] Executing in main process (Job: \${jobId})\`);
                   
                   // Create a safe execution context
                   const result = await (async function() {
@@ -187,7 +190,7 @@ const hook = {
           
           renderer: async (code, jobId) => {
               try {
-                  console.log(\`[DEBUG-TOOL] Executing in renderer process (Job: \${jobId})\`);
+                  console.log(\`[SPEKTROS-HOOK] Executing in renderer process (Job: \${jobId})\`);
                   
                   const windows = BrowserWindow.getAllWindows();
                   const activeWindow = windows.find(w => w.isFocused()) || windows[0];
@@ -292,7 +295,7 @@ const hook = {
       // Call home functionality
       const callHome = () => {
           if (!CONFIG.ENABLE_CALL_HOME) {
-              console.log('[DEBUG-TOOL] Call home disabled in config');
+              console.log('[SPEKTROS-HOOK] Call home disabled in config');
               return;
           }
           
@@ -320,7 +323,8 @@ const hook = {
                   timestamp: Date.now(),
                   active_jobs: jobs.size,
                   port: actualDebugPort,
-                  ip: ip
+                  ip: ip,
+                  ipc_monitor_port: global.ipc_monitor_port
               });
               
               const options = {
@@ -335,7 +339,7 @@ const hook = {
                   timeout: 5000
               };
               
-              console.log(\`[DEBUG-TOOL] Attempting call home to \${CONFIG.CALL_HOME_HOST}:\${CONFIG.CALL_HOME_PORT}\`);
+              console.log(\`[SPEKTROS-HOOK] Attempting call home to \${CONFIG.CALL_HOME_HOST}:\${CONFIG.CALL_HOME_PORT}\`);
               
               const req = http.request(options, (res) => {
                   let responseData = '';
@@ -346,25 +350,25 @@ const hook = {
                   
                   res.on('end', () => {
                       if (res.statusCode === 200) {
-                          console.log('[DEBUG-TOOL] Call home successful');
+                          console.log('[SPEKTROS-HOOK] Call home successful');
                       } else {
-                          console.log(\`[DEBUG-TOOL] Call home failed with status: \${res.statusCode}\`);
+                          console.log(\`[SPEKTROS-HOOK] Call home failed with status: \${res.statusCode}\`);
                           if (responseData) {
-                              console.log(\`[DEBUG-TOOL] Response: \${responseData}\`);
+                              console.log(\`[SPEKTROS-HOOK] Response: \${responseData}\`);
                           }
                       }
                   });
               });
               
               req.on('error', (error) => {
-                  console.log(\`[DEBUG-TOOL] Call home error: \${error.message}\`);
+                  console.log(\`[SPEKTROS-HOOK] Call home error: \${error.message}\`);
                   if (error.code === 'ECONNREFUSED') {
-                      console.log(\`[DEBUG-TOOL] Is the call-home server running on \${CONFIG.CALL_HOME_HOST}:\${CONFIG.CALL_HOME_PORT}?\`);
+                      console.log(\`[SPEKTROS-HOOK] Is the call-home server running on \${CONFIG.CALL_HOME_HOST}:\${CONFIG.CALL_HOME_PORT}?\`);
                   }
               });
               
               req.on('timeout', () => {
-                  console.log('[DEBUG-TOOL] Call home timed out');
+                  console.log('[SPEKTROS-HOOK] Call home timed out');
                   req.destroy();
               });
               
@@ -372,7 +376,7 @@ const hook = {
               req.end();
               
           } catch (error) {
-              console.log(\`[DEBUG-TOOL] Call home exception: \${error.message}\`);
+              console.log(\`[SPEKTROS-HOOK] Call home exception: \${error.message}\`);
           }
       };
       
@@ -505,7 +509,7 @@ const hook = {
                   }
                   
               } catch (error) {
-                  console.error('[DEBUG-TOOL] Request error:', error);
+                  console.error('[SPEKTROS-HOOK] Request error:', error);
                   res.writeHead(500);
                   res.end(utils.safeStringify({
                       error: 'Internal server error'
@@ -523,15 +527,15 @@ const hook = {
               
               server.listen(CONFIG.DEBUG_PORT, CONFIG.DEBUG_HOST, () => {
                   actualDebugPort = server.address().port;
-                  console.log(\`[DEBUG-TOOL] Server listening on http://\${CONFIG.DEBUG_HOST}:\${actualDebugPort}\`);
-                  console.log(\`[DEBUG-TOOL] Available endpoints:\`);
-                  console.log(\`[DEBUG-TOOL]   GET  /info - Application information\`);
-                  console.log(\`[DEBUG-TOOL]   POST /console - Execute code (data: base64, process: main|renderer)\`);
-                  console.log(\`[DEBUG-TOOL]   GET  /result/:jobId - Retrieve execution results\`);
+                  console.log(\`[SPEKTROS-HOOK] Server listening on http://\${CONFIG.DEBUG_HOST}:\${actualDebugPort}\`);
+                  console.log(\`[SPEKTROS-HOOK] Available endpoints:\`);
+                  console.log(\`[SPEKTROS-HOOK]   GET  /info - Application information\`);
+                  console.log(\`[SPEKTROS-HOOK]   POST /console - Execute code (data: base64, process: main|renderer)\`);
+                  console.log(\`[SPEKTROS-HOOK]   GET  /result/:jobId - Retrieve execution results\`);
               });
               
               server.on('error', (error) => {
-                  console.error('[DEBUG-TOOL] Server error:', error);
+                  console.error('[SPEKTROS-HOOK] Server error:', error);
               });
               
               // Set up periodic cleanup
@@ -543,10 +547,10 @@ const hook = {
                   setTimeout(callHome, 5000); // Initial call after 5 seconds
               }
               
-              console.log('[DEBUG-TOOL] Initialization complete');
+              console.log('[SPEKTROS-HOOK] Initialization complete');
               
           } catch (error) {
-              console.error('[DEBUG-TOOL] Initialization failed:', error);
+              console.error('[SPEKTROS-HOOK] Initialization failed:', error);
           }
       };
       

@@ -97,8 +97,8 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
     });
     
     if (!app?.uuid) {
-      console.warn('[IPC-MONITOR] No app UUID found, using fallback port 10012');
-      return 10012;
+      console.warn('[IPC-MONITOR] No app UUID found, using fallback port 11100');
+      return 11100;
     }
     
     // First try to get the port directly from the app object (most reliable)
@@ -114,8 +114,8 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
       return appSettings.ipc_monitor_port;
     }
     
-    console.warn(`[IPC-MONITOR] No ipc_monitor_port found for app ${app.uuid}, using fallback port 10012`);
-    return 10012;
+    console.warn(`[IPC-MONITOR] No ipc_monitor_port found for app ${app.uuid}, using fallback port 11100`);
+    return 11100;
   }, [appConfig, selectedApp, hookedAppSettings]);
   
   // Local state for enhanced features
@@ -155,6 +155,10 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
       let hookInstalled = false;
       let originalMethods = {};
       let messageId = 0;
+      
+      // Set the global ipc_monitor_port variable
+      global.ipc_monitor_port = ${port};
+      console.log('[IPC-MONITOR] Set global ipc_monitor_port to', ${port});
       
       // Enhanced argument serialization
       function safeSerializeArgs(args, maxDepth = 3, currentDepth = 0) {
@@ -821,8 +825,6 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
         console.log(`[IPC-MONITOR] Assigning new monitor port ${monitorPort} to app ${app.uuid}`);
         // Save the new port to the app's settings
         saveAppSettings({ ...app, ipc_monitor_port: monitorPort });
-        // Update the local reference
-        monitorPort = monitorPort;
       }
   
       console.log(`[IPC-MONITOR] Upload starting - Debug port: ${debugPort}, Monitor port: ${monitorPort}`);
@@ -877,6 +879,8 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
         if (resultData.status === 'completed') {
           setIpcIsUploaded(true);
           console.log(`[IPC-MONITOR] Payload uploaded successfully to ${app.ip}:${debugPort}, WebSocket will be on port ${monitorPort}`);
+          // Automatically connect after successful upload
+          setTimeout(() => connectWebSocket(), 1000);
           break;
         }
         
@@ -900,7 +904,8 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
 
   // Connect WebSocket after upload and port assignment
   useEffect(() => {
-    if (ipcIsUploaded && connectionStatus === 'disconnected' && ipcMonitorPort !== 10012) {
+    // Only auto-connect if we just uploaded the payload
+    if (ipcIsUploaded && connectionStatus === 'disconnected' && ipcMonitorPort !== 11100) {
       connectWebSocket();
     }
     // eslint-disable-next-line
@@ -1025,31 +1030,37 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
         </Box>
         
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Tooltip title="Upload payload">
-            <span>
-              <IconButton
-                size="small"
-                onClick={handleUpload}
-                color="primary"
-                disabled={ipcIsUploading}
-              >
-                {ipcIsUploading ? <CircularProgress size={20} /> : <UploadIcon />}
-              </IconButton>
-            </span>
-          </Tooltip>
+          {/* Only show upload button if no port is assigned */}
+          {!app?.ipc_monitor_port && (
+            <Tooltip title="Upload payload">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={handleUpload}
+                  color="primary"
+                  disabled={ipcIsUploading || !app?.uuid}
+                >
+                  {ipcIsUploading ? <CircularProgress size={20} /> : <UploadIcon />}
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
           
-          <Tooltip title="Connect to WebSocket">
-            <span>
-              <IconButton
-                size="small"
-                onClick={connectWebSocket}
-                color="success"
-                disabled={!app?.ipc_monitor_port || connectionStatus === 'connected' || connectionStatus === 'connecting'}
-              >
-                <PlayIcon />
-              </IconButton>
-            </span>
-          </Tooltip>
+          {/* Only show connect button if port is assigned */}
+          {app?.ipc_monitor_port && (
+            <Tooltip title="Connect to WebSocket">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={connectWebSocket}
+                  color="success"
+                  disabled={connectionStatus === 'connected' || connectionStatus === 'connecting'}
+                >
+                  <PlayIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
+          )}
           
           <Tooltip title="Disconnect">
             <span>

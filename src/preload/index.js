@@ -16,7 +16,6 @@ const api = {
   
   // App Directory APIs
   app: {
-
     getThemes: () => ipcRenderer.invoke('app:getThemes'),
     loadTheme: (themeId) => ipcRenderer.invoke('app:loadTheme', themeId),
   },
@@ -31,10 +30,16 @@ const api = {
     deleteBackup: (backupPath) => ipcRenderer.invoke('inject:deleteBackup', backupPath),
     startListener: () => ipcRenderer.invoke('inject:startListener'),
     stopListener: () => ipcRenderer.invoke('inject:stopListener'),
-    getHookedApps: () => ipcRenderer.invoke('inject:getHookedApps'),
+    getServerStatus: () => ipcRenderer.invoke('inject:getServerStatus'),
     sendPayload: (appPort, payload, options) => ipcRenderer.invoke('inject:sendPayload', appPort, payload, options),
     getPayloadStatus: (appPort, jobId) => ipcRenderer.invoke('inject:getPayloadStatus', appPort, jobId),
     hook: (config) => ipcRenderer.invoke('inject:hook', config)
+  },
+  
+  // Call-home data streaming
+  callHome: {
+    onData: (callback) => ipcRenderer.on('call-home-data', callback),
+    removeListeners: () => ipcRenderer.removeAllListeners('call-home-data')
   },
   
   // File Dialog APIs
