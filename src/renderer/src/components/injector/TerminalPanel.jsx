@@ -20,12 +20,12 @@ import {
   Code as CodeIcon,
 } from '@mui/icons-material';
 import { useConnectedApps } from '../../contexts/ConnectedAppContext';
+import { useInjector } from '../../contexts/InjectorContext';
+import payloads from './Payloads';
 
 const TerminalPanel = ({
-  payloads,
   selectedPayload,
   setSelectedPayload,
-  handleSendPayload,
   consoleInput,
   setConsoleInput,
   consoleOutput,
@@ -41,7 +41,11 @@ const TerminalPanel = ({
   appConfig,
 }) => {
   const { isAppOnline } = useConnectedApps();
+  const { selectedApp } = useInjector();
   const outputEndRef = useRef(null);
+
+  // Use appConfig or selectedApp, similar to Cookies.jsx
+  const config = appConfig || selectedApp;
 
   // Scroll to bottom of output
   const scrollToBottom = () => {
@@ -77,55 +81,78 @@ const TerminalPanel = ({
     }
   };
 
+  // Handle payload selection
+  const handlePayloadSelect = (event) => {
+    setSelectedPayload(event.target.value);
+  };
+
+  // Handle sending payload
+  const handleSendPayload = async () => {
+    if (selectedPayload) {
+      const payload = payloads.find(p => p.name === selectedPayload);
+      if (payload) {
+        // Set the process type based on the payload
+        setSelectedProcess(payload.process);
+        // Execute the static payload code with the payload name for display
+        handleExecuteCode(payload.code, payload.name);
+      }
+    }
+  };
+
   // Execute code
-  const handleExecuteCode = useCallback(async () => {
-    if (!appConfig) {
+  const handleExecuteCode = useCallback(async (codeToExecute = consoleInput, displayName = null) => {
+    if (!config) {
       setConsoleOutput(prev => [...prev, {
         type: 'error',
-        command: consoleInput,
+        command: displayName || codeToExecute,
+        isPayload: !!displayName,
         output: 'Please select an app first'
       }]);
       return;
     }
 
-    if (!isAppOnline(appConfig.uuid)) {
+    if (!isAppOnline(config.uuid)) {
       setConsoleOutput(prev => [...prev, {
         type: 'error',
-        command: consoleInput,
+        command: displayName || codeToExecute,
+        isPayload: !!displayName,
         output: 'Selected app is offline'
       }]);
       return;
     }
 
     try {
-      // Add to history
-      const newHistory = [consoleInput, ...consoleHistory.filter(cmd => cmd !== consoleInput)].slice(0, 100);
-      setConsoleHistory(newHistory);
-      setConsoleHistoryIndex(-1);
-      localStorage.setItem('consoleHistory', JSON.stringify(newHistory));
+      // Add to history (only add custom commands to history)
+      if (!displayName) {
+        const newHistory = [codeToExecute, ...consoleHistory.filter(cmd => cmd !== codeToExecute)].slice(0, 100);
+        setConsoleHistory(newHistory);
+        setConsoleHistoryIndex(-1);
+        localStorage.setItem('consoleHistory', JSON.stringify(newHistory));
+      }
 
       // Add command to output with pending status
       setConsoleOutput(prev => [...prev, { 
-        command: consoleInput,
+        command: displayName || codeToExecute,
+        isPayload: !!displayName,
         status: 'pending',
         output: 'Executing...'
       }]);
 
       // Encode code in base64
-      const encodedData = btoa(consoleInput);
+      const encodedData = btoa(codeToExecute);
 
       console.log('🔍 Debug - Sending code via direct fetch:', {
-        url: `http://${appConfig.ip}:${appConfig.port}/console`,
-        codeLength: consoleInput.length,
+        url: `http://${config.ip}:${config.port}/console`,
+        codeLength: codeToExecute.length,
         encodedLength: encodedData.length
       });
 
-      const response = await fetch(`http://${appConfig.ip}:${appConfig.port}/console`, {
+      const response = await fetch(`http://${config.ip}:${config.port}/console`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-          'Origin': `http://${appConfig.ip}:${appConfig.port}`
+          'Origin': `http://${config.ip}:${config.port}`
         },
         body: JSON.stringify({
           data: encodedData,
@@ -152,13 +179,13 @@ const TerminalPanel = ({
       }
 
       // Get the result using the job ID with polling
-      const resultData = await fetchResult(result.jobId, appConfig);
+      const resultData = await fetchResult(result.jobId);
 
       // Update the last output entry with the result
       setConsoleOutput(prev => {
         const newOutput = [...prev];
         const lastEntry = newOutput[newOutput.length - 1];
-        if (lastEntry && lastEntry.command === consoleInput) {
+        if (lastEntry && lastEntry.command === (displayName || codeToExecute)) {
           if (resultData.error) {
             lastEntry.status = 'error';
             // Format error with message and stack trace
@@ -171,15 +198,17 @@ const TerminalPanel = ({
         return newOutput;
       });
 
-      // Clear input
-      setConsoleInput('');
+      // Clear input if this was from the console input
+      if (codeToExecute === consoleInput) {
+        setConsoleInput('');
+      }
     } catch (error) {
       console.error('Failed to execute code:', error);
       // Update the last output entry with the error
       setConsoleOutput(prev => {
         const newOutput = [...prev];
         const lastEntry = newOutput[newOutput.length - 1];
-        if (lastEntry && lastEntry.command === consoleInput) {
+        if (lastEntry && lastEntry.command === (displayName || codeToExecute)) {
           lastEntry.status = 'error';
           lastEntry.output = error.message || 'An unknown error occurred';
         }
@@ -187,7 +216,7 @@ const TerminalPanel = ({
       });
     }
   }, [
-    appConfig,
+    config,
     consoleInput,
     consoleHistory,
     selectedProcess,
@@ -199,11 +228,11 @@ const TerminalPanel = ({
   ]);
 
   // Fetch result with polling
-  const fetchResult = async (jobId, appConfig, maxAttempts = 5) => {
+  const fetchResult = async (jobId, maxAttempts = 5) => {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         console.log(`🔍 Debug - Fetching result for job ${jobId} (attempt ${attempt + 1}/${maxAttempts})`);
-        const resultResponse = await fetch(`http://${appConfig.ip}:${appConfig.port}/result/${jobId}`);
+        const resultResponse = await fetch(`http://${config.ip}:${config.port}/result/${jobId}`);
         const resultText = await resultResponse.text();
         console.log('🔍 Debug - Raw result response:', resultText);
 
@@ -266,7 +295,7 @@ const TerminalPanel = ({
             labelId="payload-select-label"
             value={selectedPayload || ''}
             label="Select Payload"
-            onChange={(e) => setSelectedPayload(e.target.value)}
+            onChange={handlePayloadSelect}
           >
             {payloads.map((payload) => (
               <MenuItem key={payload.name} value={payload.name}>
@@ -279,7 +308,7 @@ const TerminalPanel = ({
           variant="contained"
           startIcon={<CodeIcon />}
           onClick={handleSendPayload}
-          disabled={!selectedPayload || !appConfig || !isAppOnline(appConfig.uuid)}
+          disabled={!selectedPayload || !config || !isAppOnline(config.uuid)}
         >
           Send Payload
         </Button>
@@ -319,19 +348,19 @@ const TerminalPanel = ({
               <Typography
                 component="div"
                 sx={{
-                  color: theme.palette.text.primary,
+                  color: entry.isPayload ? theme.palette.color.yellow : theme.palette.color.cyan,
                   fontWeight: 'bold',
                   mb: 0.5,
                 }}
               >
-                &gt; {entry.command}
+                &gt; {entry.isPayload ? `(${entry.command})` : entry.command}
               </Typography>
             )}
             <Typography
               component="div"
               sx={{
-                color: entry.type === 'error' ? 'error.main' : 
-                       entry.type === 'success' ? 'success.main' : 
+                color: entry.status === 'error' ? theme.palette.color.red : 
+                       entry.status === 'success' ? theme.palette.text.primary :
                        theme.palette.text.secondary,
                 fontFamily: 'monospace',
                 whiteSpace: 'pre-wrap',
@@ -355,7 +384,7 @@ const TerminalPanel = ({
           onChange={handleInputChange}
           onKeyDown={handleKeyPress}
           placeholder="Enter JavaScript code to execute..."
-          disabled={!appConfig || !isAppOnline(appConfig.uuid)}
+          disabled={!config || !isAppOnline(config.uuid)}
           sx={{
             '& .MuiOutlinedInput-root': {
               backgroundColor: theme.palette.background.paper,
@@ -367,8 +396,8 @@ const TerminalPanel = ({
             <span>
               <IconButton
                 color="primary"
-                onClick={handleExecuteCode}
-                disabled={!consoleInput || !appConfig || !isAppOnline(appConfig.uuid)}
+                onClick={() => handleExecuteCode()}
+                disabled={!consoleInput || !config || !isAppOnline(config.uuid)}
               >
                 <SendIcon />
               </IconButton>
