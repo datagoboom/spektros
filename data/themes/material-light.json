@@ -1,0 +1,47 @@
+{
+    "name": "Material Theme Light",
+    "type": "light",
+    "palette": {
+        "primary": {
+            "main": "#1976D2"
+        },
+        "secondary": {
+            "main": "#9C27B0"
+        },
+        "background": {
+            "default": "#FFFFFF",
+            "nav": "#F5F5F5",
+            "sidebar": "#F5F5F5",
+            "paper": "#FFFFFF",
+            "content": "#FFFFFF",
+            "terminal": "#F5F5F5"
+        },
+        "text": {
+            "primary": "rgba(0, 0, 0, 0.87)",
+            "secondary": "rgba(0, 0, 0, 0.6)"
+        },
+        "error": {
+            "main": "#D32F2F"
+        },
+        "warning": {
+            "main": "#ED6C02"
+        },
+        "info": {
+            "main": "#0288D1"
+        },
+        "success": {
+            "main": "#2E7D32"
+        },
+        "color": {
+            "red": "#D32F2F",
+            "green": "#2E7D32",
+            "blue": "#1976D2",
+            "cyan": "#0097A7",
+            "yellow": "#FBC02D",
+            "purple": "#9C27B0",
+            "orange": "#ED6C02",
+            "gray": "#757575",
+            "black": "#212121"
+        }
+    }
+} 

@@ -1,0 +1,47 @@
+{
+    "name": "Solarized Light",
+    "type": "light",
+    "palette": {
+        "primary": {
+            "main": "#268BD2"
+        },
+        "secondary": {
+            "main": "#6C71C4"
+        },
+        "background": {
+            "default": "#FDF6E3",
+            "nav": "#EEE8D5",
+            "sidebar": "#EEE8D5",
+            "paper": "#FDF6E3",
+            "content": "#FDF6E3",
+            "terminal": "#F5EFDC"
+        },
+        "text": {
+            "primary": "#657B83",
+            "secondary": "#93A1A1"
+        },
+        "error": {
+            "main": "#DC322F"
+        },
+        "warning": {
+            "main": "#CB4B16"
+        },
+        "info": {
+            "main": "#268BD2"
+        },
+        "success": {
+            "main": "#859900"
+        },
+        "color": {
+            "red": "#DC322F",
+            "green": "#859900",
+            "blue": "#268BD2",
+            "cyan": "#2AA198",
+            "yellow": "#B58900",
+            "purple": "#6C71C4",
+            "orange": "#CB4B16",
+            "gray": "#93A1A1",
+            "black": "#657B83"
+        }
+    }
+} 

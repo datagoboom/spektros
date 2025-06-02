@@ -1,0 +1,47 @@
+{
+    "name": "Tomorrow",
+    "type": "light",
+    "palette": {
+        "primary": {
+            "main": "#4271AE"
+        },
+        "secondary": {
+            "main": "#8959A8"
+        },
+        "background": {
+            "default": "#FFFFFF",
+            "nav": "#F5F5F5",
+            "sidebar": "#F5F5F5",
+            "paper": "#FFFFFF",
+            "content": "#FFFFFF",
+            "terminal": "#F0F0F0"
+        },
+        "text": {
+            "primary": "#4D4D4C",
+            "secondary": "#8E908C"
+        },
+        "error": {
+            "main": "#C82829"
+        },
+        "warning": {
+            "main": "#F5871F"
+        },
+        "info": {
+            "main": "#4271AE"
+        },
+        "success": {
+            "main": "#718C00"
+        },
+        "color": {
+            "red": "#C82829",
+            "green": "#718C00",
+            "blue": "#4271AE",
+            "cyan": "#3E999F",
+            "yellow": "#EAB700",
+            "purple": "#8959A8",
+            "orange": "#F5871F",
+            "gray": "#8E908C",
+            "black": "#4D4D4C"
+        }
+    }
+} 

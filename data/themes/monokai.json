@@ -1,0 +1,47 @@
+{
+    "name": "Monokai",
+    "type": "dark",
+    "palette": {
+        "primary": {
+            "main": "#A6E22E"
+        },
+        "secondary": {
+            "main": "#F92672"
+        },
+        "background": {
+            "default": "#272822",
+            "nav": "#3E3D32",
+            "sidebar": "#3E3D32",
+            "paper": "#272822",
+            "content": "#272822",
+            "terminal": "#1E1F1A"
+        },
+        "text": {
+            "primary": "#F8F8F2",
+            "secondary": "#75715E"
+        },
+        "error": {
+            "main": "#F92672"
+        },
+        "warning": {
+            "main": "#FD971F"
+        },
+        "info": {
+            "main": "#66D9EF"
+        },
+        "success": {
+            "main": "#A6E22E"
+        },
+        "color": {
+            "red": "#F92672",
+            "green": "#A6E22E",
+            "blue": "#66D9EF",
+            "cyan": "#66D9EF",
+            "yellow": "#E6DB74",
+            "purple": "#AE81FF",
+            "orange": "#FD971F",
+            "gray": "#75715E",
+            "black": "#272822"
+        }
+    }
+} 

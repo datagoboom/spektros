@@ -1,0 +1,49 @@
+{
+    "name": "Gruvbox Dark",
+    "type": "dark",
+    "palette": {
+        "primary": {
+            "main": "#8EC07C"
+        },
+        "secondary": {
+            "main": "#FB4934"
+        },
+        "background": {
+            "default": "#282828",
+            "nav": "#3C3836",
+            "sidebar": "#504945",
+            "paper": "#32302F",
+            "content": "#282828"
+        },
+        "text": {
+            "primary": "#EBDBB2",
+            "secondary": "#A89984"
+        },
+        "error": {
+            "main": "#FB4934"
+        },
+        "warning": {
+            "main": "#FABD2F"
+        },
+        "info": {
+            "main": "#83A598"
+        },
+        "success": {
+            "main": "#B8BB26"
+        },
+        "color": {
+            "red": "#FB4934",
+            "green": "#B8BB26",
+            "blue": "#83A598",
+            "cyan": "#8EC07C",
+            "yellow": "#FABD2F",
+            "purple": "#D3869B",
+            "orange": "#FE8019",
+            "gray": "#A89984",
+            "black": "#1D2021"
+        }
+    },
+    "typography": {
+        "fontFamily": "Roboto, sans-serif"
+    }
+} 
