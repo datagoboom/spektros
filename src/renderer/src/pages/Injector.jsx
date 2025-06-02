@@ -123,33 +123,6 @@ export default function Injector() {
     setSelectedPayload(event.target.value);
   };
 
-  // Update the send payload handler to use the static payloads only
-  const handleSendPayload = async () => {
-    if (selectedPayload) {
-      const payload = payloads.find(p => p.name === selectedPayload);
-      if (payload) {
-        // Set the process type based on the payload
-        setSelectedProcess(payload.process);
-        // Wait for selectedProcess to match payload.process
-        await new Promise(resolve => {
-          const checkProcess = () => {
-            setSelectedProcess(currentProcess => {
-              if (currentProcess === payload.process) {
-                resolve();
-                return currentProcess;
-              }
-              setTimeout(checkProcess, 50);
-              return currentProcess;
-            });
-          };
-          checkProcess();
-        });
-        // Execute the static payload code (no templating)
-        handleExecuteCode(payload.code);
-      }
-    }
-  };
-
   // File selection
   const handleSelectAsar = useCallback(async () => {
     try {
@@ -421,7 +394,6 @@ export default function Injector() {
                 payloads={payloads}
                 selectedPayload={selectedPayload}
                 setSelectedPayload={setSelectedPayload}
-                handleSendPayload={handleSendPayload}
                 consoleInput={consoleInput}
                 setConsoleInput={setConsoleInput}
                 consoleOutput={consoleOutput}

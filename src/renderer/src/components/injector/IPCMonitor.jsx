@@ -98,7 +98,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
     
     if (!app?.uuid) {
       console.warn('[IPC-MONITOR] No app UUID found, using fallback port 11100');
-      return 11100;
+      return null;
     }
     
     // First try to get the port directly from the app object (most reliable)
@@ -114,8 +114,8 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
       return appSettings.ipc_monitor_port;
     }
     
-    console.warn(`[IPC-MONITOR] No ipc_monitor_port found for app ${app.uuid}, using fallback port 11100`);
-    return 11100;
+    console.warn(`[IPC-MONITOR] No ipc_monitor_port found for app ${app.uuid}`);
+    return null;
   }, [appConfig, selectedApp, hookedAppSettings]);
   
   // Local state for enhanced features
@@ -150,7 +150,6 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
       }
       
       let server = null;
-      let ipcTraffic = [];
       let isRunning = false;
       let hookInstalled = false;
       let originalMethods = {};
@@ -305,22 +304,12 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
             
             console.log(\`[IPC-MONITOR] Client \${clientId} connected. Total clients: \${clients.size}\`);
             
-            // Send initial data
+            // Send initial connection confirmation only
             sendWebSocketMessage(socket, JSON.stringify({
               type: 'connection',
               clientId: clientId,
               status: 'connected'
             }));
-            
-            // Send recent IPC traffic
-            if (ipcTraffic.length > 0) {
-              const recentTraffic = ipcTraffic.slice(-100);
-              sendWebSocketMessage(socket, JSON.stringify({
-                type: 'ipc-traffic',
-                data: recentTraffic,
-                total: ipcTraffic.length
-              }));
-            }
             
             // Handle WebSocket frames
             socket.on('data', (buffer) => {
@@ -460,13 +449,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
             pid: process.pid
           };
           
-          ipcTraffic.push(enhancedData);
-          
-          // Keep memory usage reasonable
-          if (ipcTraffic.length > 2000) {
-            ipcTraffic = ipcTraffic.slice(-1500);
-          }
-          
+          // Only broadcast to connected clients, don't store messages
           if (global._broadcastIPCTraffic) {
             global._broadcastIPCTraffic(enhancedData);
           }
@@ -611,7 +594,6 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
           }
           
           isRunning = false;
-          ipcTraffic = [];
           delete global._broadcastIPCTraffic;
           
           console.log('[IPC-MONITOR] Cleanup complete');
@@ -905,7 +887,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
   // Connect WebSocket after upload and port assignment
   useEffect(() => {
     // Only auto-connect if we just uploaded the payload
-    if (ipcIsUploaded && connectionStatus === 'disconnected' && ipcMonitorPort !== 11100) {
+    if (ipcIsUploaded && connectionStatus === 'disconnected' && ipcMonitorPort !== null) {
       connectWebSocket();
     }
     // eslint-disable-next-line
@@ -928,13 +910,16 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
     setReconnectAttempts(0);
   }, []);
 
-  // Reset payload state to allow re-upload
+  // Reset monitor state to allow reconnecting to restarted app
   const handleResetPayload = useCallback(() => {
     handleDisconnect();
     setIpcIsUploaded(false);
-    clearIpcTraffic();
     setMessageCount(0);
-  }, [handleDisconnect, clearIpcTraffic]);
+    setIpcError(null);
+    setConnectionStatus('disconnected');
+    setReconnectAttempts(0);
+    setHasRetried(false);
+  }, [handleDisconnect]);
 
   // Filter messages based on search text
   const filteredTraffic = useMemo(() => {
@@ -1031,7 +1016,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
         
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {/* Only show upload button if no port is assigned */}
-          {!app?.ipc_monitor_port && (
+          {!ipcMonitorPort && (
             <Tooltip title="Upload payload">
               <span>
                 <IconButton
@@ -1047,7 +1032,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
           )}
           
           {/* Only show connect button if port is assigned */}
-          {app?.ipc_monitor_port && (
+          {ipcMonitorPort && (
             <Tooltip title="Connect to WebSocket">
               <span>
                 <IconButton
@@ -1075,7 +1060,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
             </span>
           </Tooltip>
           
-          <Tooltip title="Reset payload (allows re-upload)">
+          <Tooltip title="Reset monitor state">
             <span>
               <IconButton
                 size="small"
@@ -1349,7 +1334,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
             gap: 2
           }}>
             <Typography color={theme.palette.text.secondary} variant="h6">
-              {!app?.ipc_monitor_port ? 'Upload payload to start monitoring' :
+              {!ipcMonitorPort ? 'Upload payload to start monitoring' :
                connectionStatus === 'disconnected' ? 'Connect to start streaming' :
                connectionStatus === 'connecting' ? 'Connecting to WebSocket...' :
                'Waiting for IPC traffic'}
@@ -1378,7 +1363,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
               </>
             )}
             
-            {!app?.ipc_monitor_port && (
+            {!ipcMonitorPort && (
               <Button 
                 variant="contained" 
                 startIcon={<UploadIcon />}
