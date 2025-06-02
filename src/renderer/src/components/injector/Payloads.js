@@ -1,4 +1,15 @@
-import { DevToolsControl, GetProcessInfo, GetAppInfo, GetGlobalVariables, GetReduxState, GetWindowInfo, GetLocalStorage, EnumerateIPC, GetDependencies, GetCSP } from './payloads';
+import { 
+  DevToolsControl, 
+  GetProcessInfo, 
+  GetAppInfo, 
+  GetGlobalVariables, 
+  GetReduxState, 
+  GetWindowInfo, 
+  GetLocalStorage, 
+  EnumerateIPC, 
+  GetDependencies, 
+  GetCSP, 
+  } from './payloads';
 
 const payloads = [
   DevToolsControl,
