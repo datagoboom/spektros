@@ -41,7 +41,7 @@ import { useTheme } from '../../theme';
 import { useInjector } from '../../contexts/InjectorContext';
 
 // Enhanced IPC Monitor with improved performance and features
-export default function IPCMonitor({ selectedApp, appConfig }) {
+export default function IPCMonitor({ appConfig }) {
   const theme = useTheme();
   // Get state from context
   const {
@@ -58,11 +58,10 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
   } = useInjector();
 
   // Always define app at the top level for use throughout the component
-  const app = appConfig || selectedApp;
+  const app = appConfig;
 
-  // Use appConfig or selectedApp for connection info
-  let config = appConfig || selectedApp;
-  // Default to localhost if ip is missing or is a loopback address
+  let config = appConfig
+
   if (config) {
     let ip = config.ip;
     if (!ip || ip === '::1' || ip === 'localhost') {
@@ -71,26 +70,13 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
     config = { ...config, ip };
   }
 
-
-  useEffect(() => {
-    console.log('[IPC-MONITOR] selectedApp debug:', {
-      selectedApp,
-      hasUuid: !!selectedApp?.uuid,
-      appConfigFromProps: appConfig,
-      configFromLogic: config,
-      keys: selectedApp ? Object.keys(selectedApp) : 'selectedApp is null/undefined'
-    });
-  }, [selectedApp, appConfig, config]);
-
   
   // Enhanced port calculation with debugging
   const ipcMonitorPort = useMemo(() => {
-    // Use appConfig (passed as prop) instead of selectedApp (which is undefined)
-    const app = appConfig || selectedApp;
-    
+    const app = appConfig;
+
     console.log('[IPC-MONITOR] Port calculation debug:', {
       appConfig,
-      selectedApp,
       app,
       uuid: app?.uuid,
       ipc_monitor_port: app?.ipc_monitor_port
@@ -101,7 +87,6 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
       return null;
     }
     
-    // First try to get the port directly from the app object (most reliable)
     if (app.ipc_monitor_port) {
       console.log(`[IPC-MONITOR] Using direct port ${app.ipc_monitor_port} for app ${app.uuid}`);
       return app.ipc_monitor_port;
@@ -116,7 +101,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
     
     console.warn(`[IPC-MONITOR] No ipc_monitor_port found for app ${app.uuid}`);
     return null;
-  }, [appConfig, selectedApp, hookedAppSettings]);
+  }, [appConfig, hookedAppSettings]);
   
   // Local state for enhanced features
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
@@ -681,8 +666,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
       return;
     }
   
-    // Use appConfig (passed as prop) or fallback to selectedApp
-    const app = appConfig || selectedApp;
+    const app = appConfig;
     
     // Get the port - prefer direct from app object, fallback to settings
     let portToUse = 10012; // default fallback
@@ -697,8 +681,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
       app,
       portToUse,
       ipcMonitorPort,
-      appConfig,
-      selectedApp
+      appConfig
     });
 
   
@@ -773,7 +756,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
       setConnectionStatus('error');
       setIpcError(`Failed to create WebSocket connection to port ${portToUse}`);
     }
-  }, [maxMessages, reconnectAttempts, hasRetried, appConfig, selectedApp, hookedAppSettings, ipcMonitorPort]);
+  }, [maxMessages, reconnectAttempts, hasRetried, appConfig, hookedAppSettings, ipcMonitorPort]);
   
 
   // Enhanced upload function that ensures port is saved before connecting
@@ -782,8 +765,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
     setIpcError(null);
     
     try {
-      // Use appConfig (passed as prop) or fallback to selectedApp
-      const app = appConfig || selectedApp;
+      const app = appConfig;
       
       if (!app || !app.ip) {
         throw new Error('Selected app is missing IP information');
@@ -944,7 +926,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
   const handleExport = useCallback(() => {
     const exportData = {
       exported: new Date().toISOString(),
-      app: selectedApp,
+      app: appConfig,
       messageCount: ipcTraffic.length,
       messages: ipcTraffic
     };
@@ -958,7 +940,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [ipcTraffic, selectedApp]);
+  }, [ipcTraffic, appConfig]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -1368,7 +1350,7 @@ export default function IPCMonitor({ selectedApp, appConfig }) {
                 variant="contained" 
                 startIcon={<UploadIcon />}
                 onClick={handleUpload}
-                disabled={ipcIsUploading || !selectedApp}
+                disabled={ipcIsUploading || !appConfig}
               >
                 Upload Monitor Payload
               </Button>
