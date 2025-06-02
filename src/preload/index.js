@@ -33,7 +33,7 @@ const api = {
     getServerStatus: () => ipcRenderer.invoke('inject:getServerStatus'),
     sendPayload: (appPort, payload, options) => ipcRenderer.invoke('inject:sendPayload', appPort, payload, options),
     getPayloadStatus: (appPort, jobId) => ipcRenderer.invoke('inject:getPayloadStatus', appPort, jobId),
-    hook: (config) => ipcRenderer.invoke('inject:hook', config)
+    hook: (config, customTargetPath) => ipcRenderer.invoke('inject:hook', config, customTargetPath)
   },
   
   // Call-home data streaming

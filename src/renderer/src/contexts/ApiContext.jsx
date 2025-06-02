@@ -218,9 +218,9 @@ export function ApiProvider({ children }) {
   }, []);
 
   // New: All-in-one hook injection
-  const injectHook = useCallback(async (config, targetPath) => {
+  const injectHook = useCallback(async (config, customTargetPath) => {
     const result = await handleApiCall(
-      () => window.api.inject.hook(config, targetPath),
+      () => window.api.inject.hook(config, customTargetPath),
       'Injecting main hook payload'
     );
     return result;

