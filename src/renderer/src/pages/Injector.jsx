@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { 
   Container, 
   Box, 
@@ -118,7 +118,8 @@ export default function Injector() {
 
   const { 
     injectHook,
-    openFileDialog
+    openFileDialog,
+    openExeDialog
   } = useApi();
 
   // Local state that doesn't need to persist between page changes
@@ -142,6 +143,25 @@ export default function Injector() {
   const [useCustomTargetPath, setUseCustomTargetPath] = useState(false);
   const [customTargetPath, setCustomTargetPath] = useState(null);
   const [selectedApp, setSelectedApp] = useState(null);
+  const [exePath, setExePath] = useState('');
+  const [startAfterInject, setStartAfterInject] = useState(false);
+  const [platform, setPlatform] = useState('');
+  const exeInputRef = useRef();
+
+  useEffect(() => {
+    // Try to get platform from window.process or fallback to navigator
+    let detected = '';
+    if (window.process && window.process.platform) {
+      detected = window.process.platform;
+    } else if (navigator.userAgent.includes('Win')) {
+      detected = 'win32';
+    } else if (navigator.userAgent.includes('Mac')) {
+      detected = 'darwin';
+    } else if (navigator.userAgent.includes('Linux')) {
+      detected = 'linux';
+    }
+    setPlatform(detected);
+  }, []);
 
   // Update the payload selection handler
   const handlePayloadSelect = (event) => {
@@ -176,6 +196,18 @@ export default function Injector() {
       });
     }
   }, [setAsarPath, setIsSetupComplete, setSetupStatus]);
+
+  // File selection for executable
+  const handleSelectExe = async () => {
+    try {
+      const result = await openExeDialog();
+      if (result && result.success && result.filePath) {
+        setExePath(result.filePath);
+      }
+    } catch (err) {
+      exeInputRef.current && exeInputRef.current.focus();
+    }
+  };
 
   // Inject Hook handler
   const handleInjectHook = async () => {
@@ -322,6 +354,45 @@ export default function Injector() {
                   </Box>
                 </CardContent>
               </Card>
+
+              {/* Executable Selection */}
+              {(platform === 'win32' || platform === 'darwin' || startAfterInject) && (
+                <Card sx={{ mb: 2, backgroundColor: theme.palette.background.default }}>
+                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                    <Typography variant="subtitle2" sx={{ mb: 1, color: theme.palette.text.primary }}>
+                      Target Executable
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        placeholder="Path to app executable (e.g. slack.exe)"
+                        value={exePath}
+                        inputRef={exeInputRef}
+                        onChange={e => setExePath(e.target.value)}
+                        InputProps={{
+                          readOnly: false,
+                        }}
+                        sx={{ '& .MuiOutlinedInput-root': { backgroundColor: theme.palette.background.paper } }}
+                        disabled={platform === 'linux' && !startAfterInject}
+                      />
+                      <Button
+                        variant="outlined"
+                        onClick={handleSelectExe}
+                        sx={{ minWidth: '120px' }}
+                        disabled={platform === 'linux' && !startAfterInject}
+                      >
+                        Browse
+                      </Button>
+                    </Box>
+                    <FormControlLabel
+                      control={<Switch checked={startAfterInject} onChange={e => setStartAfterInject(e.target.checked)} />}
+                      label="Start App After Injection"
+                      sx={{ mt: 1 }}
+                    />
+                  </CardContent>
+                </Card>
+              )}
 
               <Container sx={{ display: 'flex', flexDirection: 'row', gap: 2 }}>
                 <Button

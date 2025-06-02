@@ -6,6 +6,8 @@ import { createHash } from 'crypto';
 import { tmpdir } from 'os';
 import { extractAll, createPackage } from '@electron/asar';
 import { createServer } from 'http';
+import asar from '@electron/asar';
+import { spawn } from 'child_process';
 
 /**
  * Get application directories
@@ -296,6 +298,34 @@ async function getPassthroughPayload() {
 }
 
 /**
+ * Remove integrity check fields from package.json in the extracted ASAR directory
+ */
+async function removeIntegrityCheck(extractDir) {
+  const packageJsonPath = join(extractDir, 'package.json');
+  if (!existsSync(packageJsonPath)) return;
+
+  try {
+    const packageData = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
+    let changed = false;
+
+    // Remove common integrity fields
+    ['integrity', 'asarIntegrity', 'checksum'].forEach(field => {
+      if (packageData[field]) {
+        delete packageData[field];
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      await fs.writeFile(packageJsonPath, JSON.stringify(packageData, null, 2), 'utf8');
+      console.log('Removed integrity check fields from package.json');
+    }
+  } catch (err) {
+    console.warn('Failed to patch package.json for integrity bypass:', err.message);
+  }
+}
+
+/**
  * Injection setup endpoint - handles ASAR selection and passthrough.js injection
  */
 async function setupInjection(asarPath) {
@@ -330,6 +360,9 @@ async function setupInjection(asarPath) {
     await injectPayloadIntoScript(scriptPath, payload);
     console.log(`💉 Injected payload into: ${mainScript}`);
     
+    // Remove integrity check fields
+    await removeIntegrityCheck(extractDir);
+    
     // Repack ASAR
     await repackAsar(extractDir, asarPath);
     console.log(`📦 Repacked ASAR: ${asarPath}`);
@@ -356,62 +389,117 @@ async function setupInjection(asarPath) {
   }
 }
 
-async function injectPayload(payloadPath, asarPath, customTarget = null) {
+/**
+ * Calculate the SHA256 hash of the ASAR header
+ */
+async function getAsarHeaderHash(asarPath) {
+  const rawHeader = asar.getRawHeader(asarPath);
+  const hash = createHash('sha256')
+    .update(rawHeader.headerString)
+    .digest('hex');
+  return hash;
+}
+
+/**
+ * Replace the old hash with the new hash in the executable
+ */
+async function patchExecutableHash(exePath, oldHash, newHash) {
+  const exeBuffer = await fs.readFile(exePath);
+  const oldHashBuffer = Buffer.from(oldHash, 'utf8');
+  const newHashBuffer = Buffer.from(newHash, 'utf8');
+  const idx = exeBuffer.indexOf(oldHashBuffer);
+  if (idx === -1) throw new Error('Old hash not found in executable');
+  newHashBuffer.copy(exeBuffer, idx);
+  await fs.writeFile(exePath, exeBuffer);
+  console.log('Patched executable with new ASAR hash');
+}
+
+/**
+ * Find the old hash in the executable (by searching for a SHA256 hex string)
+ */
+async function findOldHashInExe(exePath) {
+  const exeBuffer = await fs.readFile(exePath);
+  // Look for 64-char hex strings (SHA256)
+  const exeStr = exeBuffer.toString('utf8');
+  const match = exeStr.match(/[a-f0-9]{64}/i);
+  if (match) return match[0];
+  throw new Error('No SHA256 hash found in executable');
+}
+
+/**
+ * Optionally launch the executable
+ */
+function launchExecutable(exePath) {
+  spawn(exePath, [], { detached: true, stdio: 'ignore' }).unref();
+  console.log('Launched executable:', exePath);
+}
+
+async function injectPayload(payloadPath, asarPath, customTarget = null, exePath = null, startAfterInject = false) {
   let extractDir = null;
-  
   try {
     console.log(`🚀 Starting injection: ${payloadPath} -> ${asarPath}`);
-    
-    // Validate inputs
     if (!existsSync(payloadPath)) {
       throw new Error(`Payload file not found: ${payloadPath}`);
     }
-    
     if (!existsSync(asarPath)) {
       throw new Error(`ASAR file not found: ${asarPath}`);
     }
-    
     // Read payload content
     const payloadContent = await fs.readFile(payloadPath, 'utf8');
     if (!payloadContent.trim()) {
       throw new Error('Payload file is empty');
     }
-    
     // Extract ASAR
     extractDir = await extractAsar(asarPath);
     console.log(`📂 Extracted ASAR to: ${extractDir}`);
-    
-    let mainScript
-    if(customTarget) { 
-      // If custom target is specified, use it directly
+    let mainScript;
+    if (customTarget) {
       mainScript = customTarget;
       console.log(`🔍 Using custom target path: ${mainScript}`);
-    }else{
+    } else {
       mainScript = await findMainScript(extractDir);
       console.log(`🎯 Found main script: ${mainScript}`);
     }
-    
     const scriptPath = join(extractDir, mainScript);
-    
     // Inject payload
     await injectPayloadIntoScript(scriptPath, payloadContent);
     console.log(`💉 Injected payload into: ${mainScript}`);
-    
+    // Remove integrity check fields
+    await removeIntegrityCheck(extractDir);
     // Repack ASAR
     await repackAsar(extractDir, asarPath);
     console.log(`📦 Repacked ASAR: ${asarPath}`);
-    
+    // Platform-specific logic
+    if (exePath) {
+      if (['win32', 'darwin'].includes(process.platform)) {
+        console.log(`[INTEGRITY PATCH] Platform: ${process.platform}`);
+        console.log(`[INTEGRITY PATCH] Target EXE: ${exePath}`);
+        const newHash = await getAsarHeaderHash(asarPath);
+        console.log(`[INTEGRITY PATCH] New ASAR header hash: ${newHash}`);
+        const oldHash = await findOldHashInExe(exePath);
+        console.log(`[INTEGRITY PATCH] Old hash found in EXE: ${oldHash}`);
+        await patchExecutableHash(exePath, oldHash, newHash);
+        console.log(`[INTEGRITY PATCH] Hash swapped in EXE: ${exePath}`);
+        if (startAfterInject) {
+          launchExecutable(exePath);
+        }
+      } else if (process.platform === 'linux' && startAfterInject) {
+        console.log('[INTEGRITY PATCH] Linux detected, skipping integrity patch. Launching executable only.');
+        launchExecutable(exePath);
+      } else {
+        console.log(`[INTEGRITY PATCH] Platform ${process.platform} does not require integrity patching.`);
+      }
+    }
     return {
       success: true,
       injectedFile: mainScript,
-      message: 'Payload injected successfully'
+      message: 'Payload injected successfully',
+      patchedExe: !!exePath
     };
-    
   } catch (error) {
     console.error(`❌ Injection failed: ${error.message}`);
     throw error;
   } finally {
-    // Cleanup temp directory
     if (extractDir) {
       try {
         await fs.rm(extractDir, { recursive: true, force: true });

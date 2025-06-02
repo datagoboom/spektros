@@ -164,6 +164,21 @@ export function ApiProvider({ children }) {
     }
   }, []);
 
+  // Executable Dialog API
+  const openExeDialog = useCallback(async (options = {}) => {
+    try {
+      const result = await window.api.fileDialog.openExeDialog(options);
+      console.log('📁 Executable dialog raw result:', result);
+      if (result) {
+        return result;
+      }
+    } catch (err) {
+      console.error('Executable dialog error:', err);
+      setError(err.message || 'Failed to open executable dialog');
+      throw err;
+    }
+  }, []);
+
   // Complete workflow: extract ASAR and build file tree (utility function)
   const loadAsar = useCallback(async (asarPath) => {
     try {
@@ -243,6 +258,7 @@ export function ApiProvider({ children }) {
 
     // File dialogs
     openFileDialog,
+    openExeDialog,
     
     // Utilities
     clearError,

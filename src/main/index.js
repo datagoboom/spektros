@@ -56,7 +56,8 @@ function createWindow() {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      devTools: true
     }
   })
 
@@ -169,10 +170,10 @@ app.whenReady().then(async () => {
   })
 
   // Injection IPC Handlers
-  ipcMain.handle('inject:payload', async (event, payloadPath, asarPath) => {
+  ipcMain.handle('inject:payload', async (event, payloadPath, asarPath, exePath = null, startAfterInject = false) => {
     try {
       console.log(`💉 Injecting payload: ${payloadPath} -> ${asarPath}`)
-      const result = await injectPayload(payloadPath, asarPath)
+      const result = await injectPayload(payloadPath, asarPath, null, exePath, startAfterInject)
       return { success: true, ...result }
     } catch (error) {
       console.error('Payload injection failed:', error)
@@ -344,6 +345,30 @@ app.whenReady().then(async () => {
       return { success: false, error: error.message }
     }
   })
+
+  ipcMain.handle('file-dialog:get-exe-path', async (event, options = {}) => {
+    try {
+      const defaultOptions = {
+        properties: ['openFile'],
+        filters: [
+          { name: 'Executables', extensions: ['exe'] },
+          { name: 'All Files', extensions: ['*'] }
+        ],
+        multiSelections: false
+      };
+      const result = await dialog.showOpenDialog({
+        ...defaultOptions,
+        ...options
+      });
+      if (result.canceled) {
+        return { success: false, canceled: true };
+      } else {
+        return { success: true, filePath: result.filePaths[0] };
+      }
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
 
   ipcMain.handle('inject:hook', async (event, config) => {
     try {

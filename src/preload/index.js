@@ -45,8 +45,12 @@ const api = {
   // File Dialog APIs
   fileDialog: {
     openFile: (options) => ipcRenderer.invoke('file-dialog:get-path', options),
-    saveFile: (options) => ipcRenderer.invoke('file-dialog:save', options)
-  }
+    saveFile: (options) => ipcRenderer.invoke('file-dialog:save', options),
+    openExeDialog: (options) => ipcRenderer.invoke('file-dialog:get-exe-path', options)
+  },
+  
+  // Open File Dialog
+  openFileDialog: (options) => ipcRenderer.invoke('file-dialog:get-path', options)
 }
 
 // Expose APIs to renderer process
