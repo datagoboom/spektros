@@ -297,7 +297,7 @@ const TerminalPanel = ({
             label="Select Payload"
             onChange={handlePayloadSelect}
           >
-            {payloads.map((payload) => (
+            {Object.values(payloads).map((payload) => (
               <MenuItem key={payload.name} value={payload.name}>
                 {payload.name}
               </MenuItem>
