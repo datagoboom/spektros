@@ -1,0 +1,47 @@
+{
+    "name": "Solarized Dark",
+    "type": "dark",
+    "palette": {
+        "primary": {
+            "main": "#268BD2"
+        },
+        "secondary": {
+            "main": "#D33682"
+        },
+        "background": {
+            "default": "#002B36",
+            "nav": "#073642",
+            "sidebar": "#073642",
+            "paper": "#002B36",
+            "content": "#002B36",
+            "terminal": "#001E26"
+        },
+        "text": {
+            "primary": "#93A1A1",
+            "secondary": "#586E75"
+        },
+        "error": {
+            "main": "#DC322F"
+        },
+        "warning": {
+            "main": "#CB4B16"
+        },
+        "info": {
+            "main": "#268BD2"
+        },
+        "success": {
+            "main": "#859900"
+        },
+        "color": {
+            "red": "#DC322F",
+            "green": "#859900",
+            "blue": "#268BD2",
+            "cyan": "#2AA198",
+            "yellow": "#B58900",
+            "purple": "#6C71C4",
+            "orange": "#CB4B16",
+            "gray": "#586E75",
+            "black": "#002B36"
+        }
+    }
+} 

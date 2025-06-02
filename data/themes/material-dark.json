@@ -1,0 +1,47 @@
+{
+    "name": "Material Theme Dark",
+    "type": "dark",
+    "palette": {
+        "primary": {
+            "main": "#80CBC4"
+        },
+        "secondary": {
+            "main": "#FF8A65"
+        },
+        "background": {
+            "default": "#263238",
+            "nav": "#37474F",
+            "sidebar": "#37474F",
+            "paper": "#263238",
+            "content": "#263238",
+            "terminal": "#1A2327"
+        },
+        "text": {
+            "primary": "#ECEFF1",
+            "secondary": "#B3C2CA"
+        },
+        "error": {
+            "main": "#FF5252"
+        },
+        "warning": {
+            "main": "#FFB74D"
+        },
+        "info": {
+            "main": "#64B5F6"
+        },
+        "success": {
+            "main": "#81C784"
+        },
+        "color": {
+            "red": "#FF5252",
+            "green": "#81C784",
+            "blue": "#64B5F6",
+            "cyan": "#80CBC4",
+            "yellow": "#FFD54F",
+            "purple": "#B39DDB",
+            "orange": "#FFB74D",
+            "gray": "#90A4AE",
+            "black": "#263238"
+        }
+    }
+} 

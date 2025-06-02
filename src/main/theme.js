@@ -2,70 +2,33 @@ const { app, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
-// Theme management
-const THEMES_DIR = process.platform === 'linux' 
-  ? path.join(app.getPath('home'), '.config', 'spektros', 'themes')
-  : path.join(__dirname, '../../themes');
+// Always use a writable directory outside the ASAR archive
+const THEMES_DIR = path.join(app.getPath('userData'), 'themes');
+// Path to packaged themes (inside ASAR or unpacked dir)
+const PACKAGED_THEMES_DIR = path.join(__dirname, '..', '..', 'data', 'themes');
 
-// Ensure themes directory exists
-if (!fs.existsSync(THEMES_DIR)) {
-  fs.mkdirSync(THEMES_DIR, { recursive: true });
-  
-  // Copy default theme if it doesn't exist
-  const defaultThemePath = path.join(THEMES_DIR, 'tomorrow-night.json');
-  if (!fs.existsSync(defaultThemePath)) {
-    const defaultTheme = {
-      name: 'Tomorrow Night',
-      id: 'tomorrow-night',
-      palette: {
-        primary: {
-          main: '#6699CC',
-        },
-        secondary: {
-          main: '#F2777A',
-        },
-        background: {
-          default: '#1D1F21',
-          nav: '#373B41',
-          sidebar: '#44474D', 
-          paper: '#282A2E',
-          content: '#1D1F21',
-        },
-        text: {
-          primary: '#C5C8C6',
-          secondary: '#969896',
-        },
-        error: {
-          main: '#CC6666',
-        },
-        warning: {
-          main: '#F99157',
-        },
-        info: {
-          main: '#81A2BE',
-        },
-        success: {
-          main: '#B5BD68',
-        },
-        color: {
-          red: '#F2777A',
-          green: '#B5BD68',
-          blue: '#81A2BE',
-          cyan: '#8ABEB7',
-          yellow: '#F99157',
-          purple: '#B294BB',
-          orange: '#DE935F',
-          gray: '#969896',
-          black: '#151719',
+// Helper to copy all themes from packaged dir to user dir
+function copyPackagedThemesIfNeeded() {
+  if (!fs.existsSync(THEMES_DIR)) {
+    fs.mkdirSync(THEMES_DIR, { recursive: true });
+  }
+  // Copy each theme if it doesn't exist in user dir
+  if (fs.existsSync(PACKAGED_THEMES_DIR)) {
+    const files = fs.readdirSync(PACKAGED_THEMES_DIR);
+    for (const file of files) {
+      if (file.endsWith('.json')) {
+        const src = path.join(PACKAGED_THEMES_DIR, file);
+        const dest = path.join(THEMES_DIR, file);
+        if (!fs.existsSync(dest)) {
+          fs.copyFileSync(src, dest);
         }
-      },
-      typography: {
-        fontFamily: 'Roboto, sans-serif',
-      },
-    };
-    fs.writeFileSync(defaultThemePath, JSON.stringify(defaultTheme, null, 2));
+      }
+    }
   }
 }
+
+// Call this on startup
+copyPackagedThemesIfNeeded();
 
 // Get list of available themes
 ipcMain.handle('app:getThemes', async () => {

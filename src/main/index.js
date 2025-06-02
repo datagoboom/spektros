@@ -18,13 +18,13 @@ import {
   restoreBackup,
   deleteBackup,
   sendPayload,
-  getPayloadStatus
+  getPayloadStatus,
+  templatePayload
 } from './inject'
 import { callHomeServer } from './server' // Import the server
 import icon from '../../resources/icon.png?asset'
 import { promises as fs } from 'fs'
-import { templatePayload } from '../renderer/src/components/injector/Payloads'
-import hook from '../renderer/src/components/injector/Hook'
+import hook from './hook'
 
 // Import theme management
 import './theme'

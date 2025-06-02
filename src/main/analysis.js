@@ -16,7 +16,7 @@ async function extractAsarToTmp(asarPath) {
   
   try {
     // Extract ASAR to the temp directory
-    await extractAll(asarPath, tmpDir);
+    await extractAll(asarPath.filePath, tmpDir);
     console.log(`✅ Extracted ASAR to ${tmpDir}`);
     return { tmpDir };
   } catch (error) {
