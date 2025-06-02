@@ -47,10 +47,35 @@ import IPCMonitor from '../components/injector/IPCMonitor';
 import { useInjector } from '../contexts/InjectorContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { useConnectedApps } from '../contexts/ConnectedAppContext';
-import payloads from '../components/injector/Payloads';
+import { 
+  DevToolsControl, 
+  GetProcessInfo, 
+  GetAppInfo, 
+  GetGlobalVariables, 
+  GetReduxState, 
+  GetWindowInfo, 
+  GetLocalStorage, 
+  EnumerateIPC, 
+  GetDependencies, 
+  GetCSP 
+} from '../components/injector/payloads';
 import { useApi } from '../contexts/ApiContext';
 import { v4 as uuidv4 } from 'uuid';
 import TerminalPanel from '../components/injector/TerminalPanel';
+
+// Create payloads array
+const payloads = [
+  DevToolsControl,
+  GetProcessInfo,
+  GetAppInfo,
+  GetGlobalVariables,
+  GetReduxState,
+  GetWindowInfo,
+  GetLocalStorage,
+  EnumerateIPC,
+  GetDependencies,
+  GetCSP
+];
 
 export default function Injector() {
   const theme = useTheme();

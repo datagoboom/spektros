@@ -21,7 +21,32 @@ import {
 } from '@mui/icons-material';
 import { useConnectedApps } from '../../contexts/ConnectedAppContext';
 import { useInjector } from '../../contexts/InjectorContext';
-import payloads from './Payloads';
+import { 
+  DevToolsControl, 
+  GetProcessInfo, 
+  GetAppInfo, 
+  GetGlobalVariables, 
+  GetReduxState, 
+  GetWindowInfo, 
+  GetLocalStorage, 
+  EnumerateIPC, 
+  GetDependencies, 
+  GetCSP 
+} from "./payloads";
+
+// Create payloads array
+const payloads = [
+  DevToolsControl,
+  GetProcessInfo,
+  GetAppInfo,
+  GetGlobalVariables,
+  GetReduxState,
+  GetWindowInfo,
+  GetLocalStorage,
+  EnumerateIPC,
+  GetDependencies,
+  GetCSP
+];
 
 const TerminalPanel = ({
   selectedPayload,
@@ -297,7 +322,7 @@ const TerminalPanel = ({
             label="Select Payload"
             onChange={handlePayloadSelect}
           >
-            {Object.values(payloads).map((payload) => (
+            {payloads.map((payload) => (
               <MenuItem key={payload.name} value={payload.name}>
                 {payload.name}
               </MenuItem>

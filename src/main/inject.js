@@ -794,6 +794,15 @@ async function getHookedApps() {
   return { apps: Array.from(connectedApps.values()) };
 }
 
+/**
+ * Template a payload string with variables
+ */
+function templatePayload(template, variables) {
+  return template.replace(/\{\{\s*([\w_]+)\s*\}\}/g, (match, key) => {
+    return Object.prototype.hasOwnProperty.call(variables, key) ? variables[key] : match;
+  });
+}
+
 export { 
   setupInjection,  // NEW: Main setup endpoint
   injectPayload,
@@ -808,5 +817,6 @@ export {
   stopCallHomeListener,
   sendPayload,
   getPayloadStatus,
-  getHookedApps
+  getHookedApps,
+  templatePayload  // Add templatePayload to exports
 };

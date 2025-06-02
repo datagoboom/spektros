@@ -1,7 +1,7 @@
 export const GetCSP = {
     name: 'Get CSP',
     description: 'Scans for Content Security Policy settings and security headers',
-    process: 'main',
+    process: 'renderer',
     code: `
   const cspScan = {
     timestamp: new Date().toISOString(),
@@ -14,74 +14,66 @@ export const GetCSP = {
       referrerPolicy: null,
       permissionsPolicy: null
     },
-    windows: [],
+    meta: {
+      csp: null,
+      cspReportOnly: null,
+      xFrameOptions: null,
+      xContentTypeOptions: null,
+      xXSSProtection: null,
+      referrerPolicy: null,
+      permissionsPolicy: null
+    },
     errors: []
   };
 
   try {
-    const { session, BrowserWindow } = require('electron');
-    
-    // Get all windows
-    const windows = BrowserWindow.getAllWindows();
-    
-    // Scan each window
-    for (const win of windows) {
-      if (!win.webContents) continue;
-
-      try {
-        // Execute in renderer process to get headers
-        const headers = win.webContents.executeJavaScript(\`
-          (function() {
-            const headers = {};
-            
-            // Get CSP headers
-            const cspHeader = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-            const cspReportOnlyHeader = document.querySelector('meta[http-equiv="Content-Security-Policy-Report-Only"]');
-            
-            headers.csp = cspHeader ? cspHeader.content : null;
-            headers.cspReportOnly = cspReportOnlyHeader ? cspReportOnlyHeader.content : null;
-            
-            // Get other security headers
-            headers.xFrameOptions = document.querySelector('meta[http-equiv="X-Frame-Options"]')?.content;
-            headers.xContentTypeOptions = document.querySelector('meta[http-equiv="X-Content-Type-Options"]')?.content;
-            headers.xXSSProtection = document.querySelector('meta[http-equiv="X-XSS-Protection"]')?.content;
-            headers.referrerPolicy = document.querySelector('meta[name="referrer"]')?.content;
-            headers.permissionsPolicy = document.querySelector('meta[http-equiv="Permissions-Policy"]')?.content;
-            
-            return headers;
-          })();
-        \`);
-
-        // Add window info
-        cspScan.windows.push({
-          id: win.id,
-          title: win.getTitle(),
-          url: win.webContents.getURL(),
-          headers
-        });
-      } catch (e) {
-        cspScan.errors.push(\`Error scanning window \${win.id}: \${e.message}\`);
+    // Check if we're in a context with document access
+    if (typeof document === 'undefined') {
+      // If no document, try to get CSP from window.performance
+      if (window.performance && window.performance.getEntriesByType) {
+        const entries = window.performance.getEntriesByType('resource');
+        if (entries.length > 0) {
+          const headers = entries[0].responseHeaders;
+          if (headers) {
+            cspScan.headers.csp = headers['content-security-policy'] || null;
+            cspScan.headers.cspReportOnly = headers['content-security-policy-report-only'] || null;
+            cspScan.headers.xFrameOptions = headers['x-frame-options'] || null;
+            cspScan.headers.xContentTypeOptions = headers['x-content-type-options'] || null;
+            cspScan.headers.xXSSProtection = headers['x-xss-protection'] || null;
+            cspScan.headers.referrerPolicy = headers['referrer-policy'] || null;
+            cspScan.headers.permissionsPolicy = headers['permissions-policy'] || null;
+          }
+        }
       }
-    }
+    } else {
+      // We have document access, get CSP from meta tags
+      const cspHeader = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+      const cspReportOnlyHeader = document.querySelector('meta[http-equiv="Content-Security-Policy-Report-Only"]');
+      
+      cspScan.meta.csp = cspHeader ? cspHeader.content : null;
+      cspScan.meta.cspReportOnly = cspReportOnlyHeader ? cspReportOnlyHeader.content : null;
+      cspScan.meta.xFrameOptions = document.querySelector('meta[http-equiv="X-Frame-Options"]')?.content;
+      cspScan.meta.xContentTypeOptions = document.querySelector('meta[http-equiv="X-Content-Type-Options"]')?.content;
+      cspScan.meta.xXSSProtection = document.querySelector('meta[http-equiv="X-XSS-Protection"]')?.content;
+      cspScan.meta.referrerPolicy = document.querySelector('meta[name="referrer"]')?.content;
+      cspScan.meta.permissionsPolicy = document.querySelector('meta[http-equiv="Permissions-Policy"]')?.content;
 
-    // Get session headers using the correct API
-    const defaultSession = session.defaultSession;
-    if (defaultSession && defaultSession.webRequest) {
-      // Listen for headers
-      defaultSession.webRequest.onHeadersReceived((details, callback) => {
-        const responseHeaders = details.responseHeaders || {};
-        
-        // Extract security headers
-        cspScan.headers.csp = responseHeaders['content-security-policy']?.[0] || null;
-        cspScan.headers.cspReportOnly = responseHeaders['content-security-policy-report-only']?.[0] || null;
-        cspScan.headers.xFrameOptions = responseHeaders['x-frame-options']?.[0] || null;
-        cspScan.headers.xContentTypeOptions = responseHeaders['x-content-type-options']?.[0] || null;
-        cspScan.headers.xXSSProtection = responseHeaders['x-xss-protection']?.[0] || null;
-        cspScan.headers.referrerPolicy = responseHeaders['referrer-policy']?.[0] || null;
-        cspScan.headers.permissionsPolicy = responseHeaders['permissions-policy']?.[0] || null;
-        
-        callback({ responseHeaders });
-      });
+      // Also try to get headers from performance API
+      if (window.performance && window.performance.getEntriesByType) {
+        const entries = window.performance.getEntriesByType('resource');
+        if (entries.length > 0) {
+          const headers = entries[0].responseHeaders;
+          if (headers) {
+            cspScan.headers.csp = headers['content-security-policy'] || null;
+            cspScan.headers.cspReportOnly = headers['content-security-policy-report-only'] || null;
+            cspScan.headers.xFrameOptions = headers['x-frame-options'] || null;
+            cspScan.headers.xContentTypeOptions = headers['x-content-type-options'] || null;
+            cspScan.headers.xXSSProtection = headers['x-xss-protection'] || null;
+            cspScan.headers.referrerPolicy = headers['referrer-policy'] || null;
+            cspScan.headers.permissionsPolicy = headers['permissions-policy'] || null;
+          }
+        }
+      }
     }
 
     // Analyze CSP directives
@@ -112,21 +104,28 @@ export const GetCSP = {
       };
     };
 
-    // Analyze CSP for each window
-    cspScan.windows.forEach(win => {
-      if (win.headers.csp) {
-        win.headers.cspAnalysis = analyzeCSP(win.headers.csp);
-      }
-      if (win.headers.cspReportOnly) {
-        win.headers.cspReportOnlyAnalysis = analyzeCSP(win.headers.cspReportOnly);
-      }
-    });
+    // Analyze CSP from both meta tags and headers
+    if (cspScan.meta.csp) {
+      cspScan.meta.cspAnalysis = analyzeCSP(cspScan.meta.csp);
+    }
+    if (cspScan.meta.cspReportOnly) {
+      cspScan.meta.cspReportOnlyAnalysis = analyzeCSP(cspScan.meta.cspReportOnly);
+    }
+    if (cspScan.headers.csp) {
+      cspScan.headers.cspAnalysis = analyzeCSP(cspScan.headers.csp);
+    }
+    if (cspScan.headers.cspReportOnly) {
+      cspScan.headers.cspReportOnlyAnalysis = analyzeCSP(cspScan.headers.cspReportOnly);
+    }
 
     // Add metadata
     cspScan.metadata = {
-      totalWindows: windows.length,
-      windowsWithCSP: cspScan.windows.filter(w => w.headers.csp).length,
-      windowsWithCSPReportOnly: cspScan.windows.filter(w => w.headers.cspReportOnly).length,
+      hasDocument: typeof document !== 'undefined',
+      url: typeof window !== 'undefined' ? window.location.href : null,
+      hasMetaCSP: !!cspScan.meta.csp,
+      hasMetaCSPReportOnly: !!cspScan.meta.cspReportOnly,
+      hasHeaderCSP: !!cspScan.headers.csp,
+      hasHeaderCSPReportOnly: !!cspScan.headers.cspReportOnly,
       hasErrors: cspScan.errors.length > 0
     };
 
