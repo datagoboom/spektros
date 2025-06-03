@@ -345,7 +345,7 @@ app.whenReady().then(async () => {
     }
   })
 
-  ipcMain.handle('inject:hook', async (event, config) => {
+  ipcMain.handle('inject:hook', async (event, config, customTarget = null) => {
     try {
       // Use Electron's userData path for appDir
       const appDir = app.getPath('userData');
@@ -387,7 +387,7 @@ app.whenReady().then(async () => {
       await fs.writeFile(payloadPath, templatedPayload, 'utf8');
 
       // Inject the payload into the ASAR
-      const result = await injectPayload(payloadPath, asarPath);
+      const result = await injectPayload(payloadPath, asarPath, customTarget);
       return { success: true, ...result, payloadPath };
     } catch (error) {
       return { success: false, error: error.message };

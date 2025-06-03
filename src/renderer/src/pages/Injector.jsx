@@ -186,6 +186,16 @@ export default function Injector() {
       });
       return;
     }
+
+    // Validate custom target path if enabled
+    if (useCustomTargetPath && !customTargetPath) {
+      setSetupStatus({
+        type: 'error',
+        message: 'Please specify a custom target path.'
+      });
+      return;
+    }
+
     try {
       setIsSetupLoading(true);
       setSetupStatus(null);
@@ -195,7 +205,7 @@ export default function Injector() {
         ...asarConfig
       };
 
-      const result = await injectHook(config, customTargetPath);
+      const result = await injectHook(config, useCustomTargetPath ? customTargetPath : null);
 
       if (result.success) {
         setIsSetupComplete(true);
