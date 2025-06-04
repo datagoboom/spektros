@@ -164,6 +164,21 @@ export function ApiProvider({ children }) {
     }
   }, []);
 
+  const saveFileDialog = useCallback(async (options = {}) => {
+    try {
+      const result = await window.api.fileDialog.saveFile(options);
+      console.log('💾 Save dialog result:', result);
+      if (result.success) {
+        return result;
+      }
+      return null;
+    } catch (err) {
+      console.error('Save dialog error:', err);
+      setError(err.message || 'Failed to open save dialog');
+      throw err;
+    }
+  }, []);
+
   // Complete workflow: extract ASAR and build file tree (utility function)
   const loadAsar = useCallback(async (asarPath) => {
     try {
@@ -243,11 +258,21 @@ export function ApiProvider({ children }) {
 
     // File dialogs
     openFileDialog,
+    saveFileDialog,
     
     // Utilities
     clearError,
     resetState,
     injectHook,
+
+    // ASAR repacking
+    repackAsar: async (sourceDir, outputPath) => {
+      const result = await handleApiCall(
+        () => window.api.analysis.repack(sourceDir, outputPath),
+        `Repacking ASAR to ${outputPath}`
+      );
+      return result;
+    },
   };
 
   return (

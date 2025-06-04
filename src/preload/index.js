@@ -11,7 +11,8 @@ const api = {
     saveFile: (filePath, content) => ipcRenderer.invoke('analysis:saveFile', filePath, content),
     search: (tmpDir, searchQuery, options) => ipcRenderer.invoke('analysis:search', tmpDir, searchQuery, options),
     replace: (tmpDir, searchQuery, replaceText, options, targetFiles) => 
-      ipcRenderer.invoke('analysis:replace', tmpDir, searchQuery, replaceText, options, targetFiles)
+      ipcRenderer.invoke('analysis:replace', tmpDir, searchQuery, replaceText, options, targetFiles),
+    repack: (sourceDir, outputPath) => ipcRenderer.invoke('analysis:repack', sourceDir, outputPath)
   },
   
   // App Directory APIs

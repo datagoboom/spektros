@@ -1,9 +1,10 @@
-import { extractAll } from '@electron/asar';
+import { extractAll, createPackage } from '@electron/asar';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { mkdtempSync, readFileSync } from 'fs';
 import { promises as fs } from 'fs';
 import micromatch from 'micromatch';
+import { pack } from '@electron/asar';
 
 /**
  * Extract ASAR file to a temporary directory
@@ -494,6 +495,24 @@ async function replaceInFiles(tmpDir, searchQuery, replaceText, options = {}, ta
   return replaceResults;
 }
 
+/**
+ * Repack a directory into an ASAR file
+ * @param {string} sourceDir - Directory to pack
+ * @param {string} outputPath - Path where to save the ASAR file
+ * @returns {Promise<{success: boolean, outputPath: string}>}
+ */
+async function repackAsar(sourceDir, outputPath) {
+  try {
+    // Pack the directory into an ASAR file
+    await createPackage(sourceDir, outputPath);
+    console.log(`✅ Repacked ASAR to ${outputPath}`);
+    return { success: true, outputPath };
+  } catch (error) {
+    console.error('Failed to repack ASAR:', error);
+    throw new Error(`ASAR repacking failed: ${error.message}`);
+  }
+}
+
 export { 
   extractAsarToTmp, 
   getFileContent, 
@@ -502,5 +521,6 @@ export {
   cleanupTmpDir,
   getFileType,
   searchFiles,
-  replaceInFiles
+  replaceInFiles,
+  repackAsar
 };
