@@ -106,12 +106,12 @@ export const EnumerateIPC = {
             const { ipcRenderer } = require('electron');
             const channels = new Set();
             
-            // Method 1: Direct event listeners
+            
             if (ipcRenderer && ipcRenderer._events) {
               Object.keys(ipcRenderer._events).forEach(channel => channels.add(channel));
             }
 
-            // Method 2: Common channels
+            
             const commonChannels = [
               'app', 'window', 'dialog', 'menu', 'shell', 'clipboard', 'power',
               'screen', 'systemPreferences', 'nativeTheme', 'desktopCapturer',
@@ -127,7 +127,7 @@ export const EnumerateIPC = {
               });
             }
 
-            // Method 3: Look for channels in the prototype chain
+            
             if (ipcRenderer) {
               const prototypeProps = Object.getOwnPropertyNames(Object.getPrototypeOf(ipcRenderer));
               prototypeProps.forEach(prop => {
@@ -137,7 +137,7 @@ export const EnumerateIPC = {
               });
             }
 
-            // Get handler details for each channel
+            
             const channelDetails = {};
             channels.forEach(channel => {
               try {

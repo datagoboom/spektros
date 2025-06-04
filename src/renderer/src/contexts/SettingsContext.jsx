@@ -1,9 +1,9 @@
-// react context boilerplate
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const STORAGE_KEY = 'spektros-settings';
 
-// Map of user-friendly theme names to CSS file names
+
 export const CODE_EDITOR_THEMES = {
   'GitHub Dark': 'github-dark',
   'GitHub Dark Dimmed': 'github-dark-dimmed',
@@ -24,16 +24,16 @@ export const CODE_EDITOR_THEMES = {
 const SettingsContext = createContext();
 
 const SettingsProvider = ({ children }) => {
-  // Load settings from localStorage on mount
+  
   const loadSettings = () => {
     try {
       const savedSettings = localStorage.getItem(STORAGE_KEY);
       return savedSettings ? JSON.parse(savedSettings) : {
-        theme: 'tomorrow-night', // Default theme
-        themeType: 'dark', // Default theme type
-        codeFontSize: 'medium', // Default code editor font size
-        uiFontSize: 'medium', // Default UI font size
-        codeEditorTheme: 'GitHub Dark', // Default code editor theme
+        theme: 'tomorrow-night', 
+        themeType: 'dark', 
+        codeFontSize: 'medium', 
+        uiFontSize: 'medium', 
+        codeEditorTheme: 'GitHub Dark', 
       };
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -51,7 +51,7 @@ const SettingsProvider = ({ children }) => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [availableThemes, setAvailableThemes] = useState([]);
 
-  // Load available themes on mount
+  
   useEffect(() => {
     const loadThemes = async () => {
       try {
@@ -65,7 +65,7 @@ const SettingsProvider = ({ children }) => {
     loadThemes();
   }, []);
 
-  // Update theme type when theme changes
+  
   useEffect(() => {
     const updateThemeType = async () => {
       try {
@@ -81,7 +81,7 @@ const SettingsProvider = ({ children }) => {
     updateThemeType();
   }, [settings.theme]);
 
-  // Save settings to localStorage whenever they change
+  
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));

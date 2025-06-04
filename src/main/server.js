@@ -14,7 +14,7 @@ class CallHomeServer {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
     
-    // Add CORS headers if needed
+    
     this.app.use((req, res, next) => {
       res.header('Access-Control-Allow-Origin', '*');
       res.header('Access-Control-Allow-Headers', 'Content-Type');
@@ -28,16 +28,16 @@ class CallHomeServer {
       let data = req.body;
       console.log(data);
 
-      // Get client IP address from request
+      
       const clientIp = req.ip || 
                       req.connection.remoteAddress || 
                       req.socket.remoteAddress || 
                       req.connection.socket?.remoteAddress;
 
-      // Convert IPv6 loopback to IPv4 if needed
+      
       const ipv4Address = clientIp === '::1' ? '127.0.0.1' : 
                          clientIp === '::ffff:127.0.0.1' ? '127.0.0.1' :
-                         clientIp.replace(/^::ffff:/, ''); // Remove IPv6 prefix if present
+                         clientIp.replace(/^::ffff:/, ''); 
 
       const appInfo = {
         uuid: data.uuid,
@@ -53,7 +53,7 @@ class CallHomeServer {
 
       console.log(`📞 Call-home received from ${appInfo.name} (${appInfo.uuid}) at ${ipv4Address}`);
 
-      // Send to all renderer processes immediately
+      
       BrowserWindow.getAllWindows().forEach(window => {
         if (!window.isDestroyed()) {
           window.webContents.send('call-home-data', appInfo);
@@ -63,7 +63,7 @@ class CallHomeServer {
       return res.status(200).json({ success: true, received: Date.now() });
     });
 
-    // Health check endpoint
+    
     this.app.get('/health', (req, res) => {
       res.json({ 
         status: 'healthy', 

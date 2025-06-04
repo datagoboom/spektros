@@ -1,10 +1,10 @@
-// routes.jsx
+
 import { useEffect, useLocation } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { useHistory } from './contexts/HistoryContext'; 
 import Layout from './components/Layout';
 
-// Import your page components
+
 import Analysis from './pages/Analysis';
 import Injector from './pages/Injector';
 import History from './pages/History';

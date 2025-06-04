@@ -53,11 +53,11 @@ const History = () => {
     getBrowserHistory,
   } = useHistory();
 
-  // Generate activity log
+  
   const activityLog = useMemo(() => {
     const activities = [];
     
-    // Add console commands
+    
     consoleOutput.forEach((cmd, index) => {
       activities.push({
         id: `console-${index}`,
@@ -69,7 +69,7 @@ const History = () => {
       });
     });
 
-    // Add IPC messages
+    
     ipcTraffic.forEach((msg, index) => {
       activities.push({
         id: `ipc-${index}`,
@@ -81,7 +81,7 @@ const History = () => {
       });
     });
 
-    // Add file operations
+    
     const trackedFiles = getAllTrackedFiles();
     trackedFiles.forEach((file, index) => {
       const state = getFileState(file);
@@ -95,7 +95,7 @@ const History = () => {
       });
     });
 
-    // Add navigation history
+    
     const browserHistory = getBrowserHistory();
     browserHistory.forEach((page, index) => {
       activities.push({
@@ -108,7 +108,7 @@ const History = () => {
       });
     });
 
-    // Add cookie monitoring if active
+    
     if (cookiesData && cookiesData.cookies) {
       activities.push({
         id: 'cookies',
@@ -120,7 +120,7 @@ const History = () => {
       });
     }
 
-    // Add ASAR analysis if available
+    
     if (currentAsarInfo) {
       activities.push({
         id: 'asar-analysis',
@@ -132,7 +132,7 @@ const History = () => {
       });
     }
 
-    // Add injection setup if available
+    
     if (asarPath) {
       activities.push({
         id: 'injection-setup',
@@ -144,7 +144,7 @@ const History = () => {
       });
     }
 
-    // Sort by timestamp (most recent first) and limit to last 50
+    
     return activities
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, 50);
@@ -198,7 +198,7 @@ const History = () => {
       p: 3,
       overflow: 'hidden'
     }}>
-      {/* Header */}
+      {}
       <Box sx={{ mb: 3, textAlign: 'center' }}>
         <Typography variant="h4" gutterBottom>
           Activity History
@@ -208,7 +208,7 @@ const History = () => {
         </Typography>
       </Box>
 
-      {/* Activity Table */}
+      {}
       <Paper sx={{ 
         width: '100%', 
         maxWidth: 1200,

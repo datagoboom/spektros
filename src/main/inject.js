@@ -7,9 +7,7 @@ import { tmpdir } from 'os';
 import { extractAll, createPackage } from '@electron/asar';
 import { createServer } from 'http';
 
-/**
- * Get application directories
- */
+
 function getAppDataPath() {
   return app.getPath('userData');
 }
@@ -22,25 +20,19 @@ function getBackupsPath() {
   return join(getAppDataPath(), 'backups');
 }
 
-/**
- * Ensure directory exists
- */
+
 async function ensureDirectory(dirPath) {
   if (!existsSync(dirPath)) {
     await fs.mkdir(dirPath, { recursive: true });
   }
 }
 
-/**
- * Generate hash for file path (for backup naming)
- */
+
 function hashPath(filePath) {
   return createHash('md5').update(filePath).digest('hex').substring(0, 8);
 }
 
-/**
- * Extract ASAR file to temporary directory
- */
+
 async function extractAsar(asarPath) {
   const extractDir = join(tmpdir(), `asar_extract_${Date.now()}_${Math.random().toString(36).substring(7)}`);
   
@@ -49,10 +41,10 @@ async function extractAsar(asarPath) {
     
     console.log(`📂 Extracting ASAR file: ${asarPath}`);
     
-    // Extract ASAR file using @electron/asar
+    
     await extractAll(asarPath, extractDir);
     
-    // Verify extraction
+    
     const files = await fs.readdir(extractDir);
     if (files.length === 0) {
       throw new Error('ASAR extraction failed - no files found');
@@ -65,15 +57,13 @@ async function extractAsar(asarPath) {
     try {
       await fs.rm(extractDir, { recursive: true, force: true });
     } catch (cleanupError) {
-      // Ignore cleanup errors
+      
     }
     throw new Error(`Failed to extract ASAR: ${error.message}`);
   }
 }
 
-/**
- * Repack ASAR file using @electron/asar
- */
+
 async function repackAsar(extractDir, outputPath) {
   try {
     console.log(`📦 Repacking ASAR file: ${outputPath}`);
@@ -84,12 +74,10 @@ async function repackAsar(extractDir, outputPath) {
   }
 }
 
-/**
- * Find main script in ASAR structure
- */
+
 async function findMainScript(extractDir) {
   try {
-    // First check for common main script patterns
+    
     const commonMainFiles = [
       'main.js',
       'index.js',
@@ -109,7 +97,7 @@ async function findMainScript(extractDir) {
       }
     }
 
-    // Look for package.json to find main entry
+    
     const packagePath = join(extractDir, 'package.json');
     if (existsSync(packagePath)) {
       try {
@@ -126,7 +114,7 @@ async function findMainScript(extractDir) {
       }
     }
 
-    // If no main script found, try to find any JavaScript file
+    
     const jsFiles = await findJavaScriptFiles(extractDir);
     if (jsFiles.length > 0) {
       console.log(`✅ Found JavaScript file: ${jsFiles[0]}`);
@@ -140,9 +128,7 @@ async function findMainScript(extractDir) {
   }
 }
 
-/**
- * Find all JavaScript files in directory recursively
- */
+
 async function findJavaScriptFiles(dir, relativePath = '') {
   const jsFiles = [];
   
@@ -154,7 +140,7 @@ async function findJavaScriptFiles(dir, relativePath = '') {
       const relativeFilePath = join(relativePath, entry.name);
       
       if (entry.isDirectory()) {
-        // Skip node_modules and other common non-source directories
+        
         if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'build') {
           continue;
         }
@@ -171,17 +157,15 @@ async function findJavaScriptFiles(dir, relativePath = '') {
   return jsFiles;
 }
 
-/**
- * Inject payload into script file
- */
+
 async function injectPayloadIntoScript(scriptPath, payload) {
   try {
     const originalContent = await fs.readFile(scriptPath, 'utf8');
     
-    // Clean the payload
+    
     const cleanPayload = payload.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     
-    // Inject at the beginning with proper spacing
+    
     const injectedContent = `${cleanPayload}\n\n${originalContent}`;
     
     await fs.writeFile(scriptPath, injectedContent, 'utf8');
@@ -190,14 +174,12 @@ async function injectPayloadIntoScript(scriptPath, payload) {
   }
 }
 
-/**
- * Create backup of ASAR file
- */
+
 async function createBackup(asarPath) {
   try {
     console.log(`📦 Creating backup for: ${asarPath}`);
     
-    // Double-check file exists before backup
+    
     if (!existsSync(asarPath)) {
       throw new Error(`Cannot create backup: ASAR file not found at ${asarPath}`);
     }
@@ -211,7 +193,7 @@ async function createBackup(asarPath) {
     
     console.log(`📋 Backup will be created at: ${backupPath}`);
     
-    // Copy the ASAR file directly
+    
     await fs.copyFile(asarPath, backupPath);
     console.log(`✅ Created backup from ASAR file`);
     
@@ -222,32 +204,30 @@ async function createBackup(asarPath) {
   }
 }
 
-/**
- * Handle mounted ASAR files - but respect user's file selection
- */
+
 async function resolveAsarPath(asarPath) {
   try {
     console.log(`🔍 Resolving ASAR path: ${asarPath}`);
     
-    // First, always try to use the exact path the user selected
+    
     if (existsSync(asarPath)) {
       const stats = await fs.stat(asarPath);
       
-      // If it's a regular file with content, use it as-is
+      
       if (stats.isFile() && stats.size > 0) {
         console.log(`✅ Using selected file directly: ${asarPath} (${stats.size} bytes)`);
         return asarPath;
       }
       
-      // If it's a file but empty, or a directory, it might be mounted
+      
       console.log(`⚠️  Selected file appears to be ${stats.isDirectory() ? 'a directory' : 'empty'} (${stats.size} bytes)`);
       console.log(`🔍 This might be a mounted ASAR file`);
       
-      // Let's try to work with it anyway first
+      
       if (asarPath.endsWith('.asar')) {
         console.log(`🔄 Attempting to use mounted ASAR directly...`);
         
-        // Try to access it directly - sometimes mounted files still work
+        
         try {
           await fs.access(asarPath, fs.constants.R_OK);
           console.log(`✅ Mounted ASAR is accessible, trying to use it directly`);
@@ -257,7 +237,7 @@ async function resolveAsarPath(asarPath) {
         }
       }
       
-      // Only if direct access fails, show error with suggestions
+      
       throw new Error(`
 Selected ASAR file cannot be used directly:
 - Path: ${asarPath}
@@ -281,9 +261,7 @@ The file must be unmounted and accessible for injection to work.
   }
 }
 
-/**
- * Get passthrough payload content
- */
+
 async function getPassthroughPayload() {
   const payloadsPath = getPayloadsPath();
   const passthroughPath = join(payloadsPath, 'passthrough.js');
@@ -295,42 +273,40 @@ async function getPassthroughPayload() {
   return fs.readFile(passthroughPath, 'utf8');
 }
 
-/**
- * Injection setup endpoint - handles ASAR selection and passthrough.js injection
- */
+
 async function setupInjection(asarPath) {
   let extractDir = null;
   
   try {
     console.log(`🚀 Starting injection setup for: ${asarPath}`);
     
-    // Basic validation - file must exist
+    
     if (!existsSync(asarPath)) {
       throw new Error(`Selected ASAR file does not exist: ${asarPath}`);
     }
     
-    // Extract ASAR
+    
     extractDir = await extractAsar(asarPath);
     console.log(`📂 Extracted ASAR to: ${extractDir}`);
     
-    // List contents
+    
     const files = await fs.readdir(extractDir);
     console.log('📋 ASAR contents:', files);
     
-    // Find main script
+    
     const mainScript = await findMainScript(extractDir);
     const scriptPath = join(extractDir, mainScript);
     console.log(`🎯 Found main script: ${mainScript}`);
     
-    // Get passthrough payload
+    
     const payload = await getPassthroughPayload();
     console.log('📜 Loaded passthrough payload');
     
-    // Inject payload
+    
     await injectPayloadIntoScript(scriptPath, payload);
     console.log(`💉 Injected payload into: ${mainScript}`);
     
-    // Repack ASAR
+    
     await repackAsar(extractDir, asarPath);
     console.log(`📦 Repacked ASAR: ${asarPath}`);
     
@@ -345,7 +321,7 @@ async function setupInjection(asarPath) {
     console.error(`❌ Injection setup failed: ${error.message}`);
     throw error;
   } finally {
-    // Cleanup temp directory
+    
     if (extractDir) {
       try {
         await fs.rm(extractDir, { recursive: true, force: true });
@@ -362,7 +338,7 @@ async function injectPayload(payloadPath, asarPath, customTarget = null) {
   try {
     console.log(`🚀 Starting injection: ${payloadPath} -> ${asarPath}`);
     
-    // Validate inputs
+    
     if (!existsSync(payloadPath)) {
       throw new Error(`Payload file not found: ${payloadPath}`);
     }
@@ -371,19 +347,19 @@ async function injectPayload(payloadPath, asarPath, customTarget = null) {
       throw new Error(`ASAR file not found: ${asarPath}`);
     }
     
-    // Read payload content
+    
     const payloadContent = await fs.readFile(payloadPath, 'utf8');
     if (!payloadContent.trim()) {
       throw new Error('Payload file is empty');
     }
     
-    // Extract ASAR
+    
     extractDir = await extractAsar(asarPath);
     console.log(`📂 Extracted ASAR to: ${extractDir}`);
     
     let mainScript
     if(customTarget) { 
-      // If custom target is specified, use it directly
+      
       mainScript = customTarget;
       console.log(`🔍 Using custom target path: ${mainScript}`);
     }else{
@@ -393,11 +369,11 @@ async function injectPayload(payloadPath, asarPath, customTarget = null) {
     
     const scriptPath = join(extractDir, mainScript);
     
-    // Inject payload
+    
     await injectPayloadIntoScript(scriptPath, payloadContent);
     console.log(`💉 Injected payload into: ${mainScript}`);
     
-    // Repack ASAR
+    
     await repackAsar(extractDir, asarPath);
     console.log(`📦 Repacked ASAR: ${asarPath}`);
     
@@ -411,7 +387,7 @@ async function injectPayload(payloadPath, asarPath, customTarget = null) {
     console.error(`❌ Injection failed: ${error.message}`);
     throw error;
   } finally {
-    // Cleanup temp directory
+    
     if (extractDir) {
       try {
         await fs.rm(extractDir, { recursive: true, force: true });
@@ -422,9 +398,7 @@ async function injectPayload(payloadPath, asarPath, customTarget = null) {
   }
 }
 
-/**
- * Create a new payload file
- */
+
 async function createPayload(name, content, category = 'custom') {
   try {
     await ensureDirectory(getPayloadsPath());
@@ -432,7 +406,7 @@ async function createPayload(name, content, category = 'custom') {
     const categoryDir = join(getPayloadsPath(), category);
     await ensureDirectory(categoryDir);
     
-    // Ensure .js extension
+    
     const fileName = name.endsWith('.js') ? name : `${name}.js`;
     const payloadPath = join(categoryDir, fileName);
     
@@ -453,9 +427,7 @@ async function createPayload(name, content, category = 'custom') {
   }
 }
 
-/**
- * List all payloads in the payloads directory
- */
+
 async function listPayloads() {
   try {
     const payloadsPath = getPayloadsPath();
@@ -492,7 +464,7 @@ async function listPayloads() {
     
     await scanDirectory(payloadsPath);
     
-    // Sort by category then by name
+    
     payloads.sort((a, b) => {
       if (a.category !== b.category) {
         return a.category.localeCompare(b.category);
@@ -510,9 +482,7 @@ async function listPayloads() {
   }
 }
 
-/**
- * List backups for a specific ASAR path
- */
+
 async function listBackups(asarPath = null) {
   try {
     const backupsPath = getBackupsPath();
@@ -530,7 +500,7 @@ async function listBackups(asarPath = null) {
       const fullPath = join(backupsPath, entry);
       const stats = await fs.stat(fullPath);
       
-      // Parse backup filename: originalname_hash_timestamp.backup
+      
       const parts = entry.replace('.backup', '').split('_');
       if (parts.length >= 3) {
         const timestamp = parseInt(parts[parts.length - 1]);
@@ -547,14 +517,14 @@ async function listBackups(asarPath = null) {
           size: stats.size
         };
         
-        // If asarPath specified, only include backups for that file
+        
         if (!asarPath || hash === hashPath(asarPath)) {
           backups.push(backup);
         }
       }
     }
     
-    // Sort by timestamp (newest first)
+    
     backups.sort((a, b) => b.timestamp - a.timestamp);
     
     return {
@@ -567,16 +537,14 @@ async function listBackups(asarPath = null) {
   }
 }
 
-/**
- * Restore ASAR from backup
- */
+
 async function restoreBackup(backupPath, asarPath) {
   try {
     if (!existsSync(backupPath)) {
       throw new Error(`Backup file not found: ${backupPath}`);
     }
     
-    // Verify backup belongs to this ASAR
+    
     const backupName = basename(backupPath);
     const parts = backupName.replace('.backup', '').split('_');
     if (parts.length >= 3) {
@@ -590,7 +558,7 @@ async function restoreBackup(backupPath, asarPath) {
       throw new Error('Invalid backup file format');
     }
     
-    // Restore from backup
+    
     await fs.copyFile(backupPath, asarPath);
     
     return {
@@ -602,9 +570,7 @@ async function restoreBackup(backupPath, asarPath) {
   }
 }
 
-/**
- * Delete a backup file
- */
+
 async function deleteBackup(backupPath) {
   try {
     if (!existsSync(backupPath)) {
@@ -622,20 +588,14 @@ async function deleteBackup(backupPath) {
   }
 }
 
-/**
- * Store connected apps
- */
+
 const connectedApps = new Map();
 
-/**
- * Call-home listener server
- */
+
 let callHomeServer = null;
 const CALL_HOME_PORT = 5666;
 
-/**
- * Start call-home listener server
- */
+
 async function startCallHomeListener() {
   if (callHomeServer) {
     console.log('Call-home listener already running');
@@ -657,7 +617,7 @@ async function startCallHomeListener() {
               res.end(JSON.stringify({ error: 'Missing uuid in call-home' }));
               return;
             }
-            // Store the app info by uuid
+            
             const appInfo = {
               uuid: data.uuid,
               name: data.app_name,
@@ -694,9 +654,7 @@ async function startCallHomeListener() {
   }
 }
 
-/**
- * Stop call-home listener server
- */
+
 async function stopCallHomeListener() {
   if (callHomeServer) {
     try {
@@ -714,9 +672,7 @@ async function stopCallHomeListener() {
   }
 }
 
-/**
- * Send payload to hooked app
- */
+
 async function sendPayload(appPort, payload, options = {}) {
   const {
     windowId = null,
@@ -725,12 +681,12 @@ async function sendPayload(appPort, payload, options = {}) {
   } = options;
 
   try {
-    // Ensure we have a valid port
+    
     if (!appPort || typeof appPort !== 'number') {
       throw new Error('Invalid port number');
     }
 
-    // Ensure we have a valid payload
+    
     if (!payload || typeof payload !== 'string') {
       throw new Error('Invalid payload content');
     }
@@ -768,9 +724,7 @@ async function sendPayload(appPort, payload, options = {}) {
   }
 }
 
-/**
- * Get status of payload execution
- */
+
 async function getPayloadStatus(appPort, jobId) {
   try {
     const url = `http://127.0.0.1:${appPort}/status/${jobId}`;
@@ -787,16 +741,12 @@ async function getPayloadStatus(appPort, jobId) {
   }
 }
 
-/**
- * Get list of hooked apps
- */
+
 async function getHookedApps() {
   return { apps: Array.from(connectedApps.values()) };
 }
 
-/**
- * Template a payload string with variables
- */
+
 function templatePayload(template, variables) {
   return template.replace(/\{\{\s*([\w_]+)\s*\}\}/g, (match, key) => {
     return Object.prototype.hasOwnProperty.call(variables, key) ? variables[key] : match;
@@ -804,7 +754,7 @@ function templatePayload(template, variables) {
 }
 
 export { 
-  setupInjection,  // NEW: Main setup endpoint
+  setupInjection,  
   injectPayload,
   createPayload,
   listPayloads,
@@ -818,5 +768,5 @@ export {
   sendPayload,
   getPayloadStatus,
   getHookedApps,
-  templatePayload  // Add templatePayload to exports
+  templatePayload  
 };

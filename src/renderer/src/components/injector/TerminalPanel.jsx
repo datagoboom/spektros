@@ -34,7 +34,7 @@ import {
   GetCSP 
 } from "./payloads";
 
-// Create payloads array
+
 const payloads = [
   DevToolsControl,
   GetProcessInfo,
@@ -69,10 +69,10 @@ const TerminalPanel = ({
   const { selectedApp } = useInjector();
   const outputEndRef = useRef(null);
 
-  // Use appConfig or selectedApp, similar to Cookies.jsx
+  
   const config = appConfig || selectedApp;
 
-  // Scroll to bottom of output
+  
   const scrollToBottom = () => {
     outputEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -81,12 +81,12 @@ const TerminalPanel = ({
     scrollToBottom();
   }, [consoleOutput]);
 
-  // Handle input changes
+  
   const handleInputChange = (event) => {
     setConsoleInput(event.target.value);
   };
 
-  // Handle key press
+  
   const handleKeyPress = (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
@@ -106,25 +106,25 @@ const TerminalPanel = ({
     }
   };
 
-  // Handle payload selection
+  
   const handlePayloadSelect = (event) => {
     setSelectedPayload(event.target.value);
   };
 
-  // Handle sending payload
+  
   const handleSendPayload = async () => {
     if (selectedPayload) {
       const payload = payloads.find(p => p.name === selectedPayload);
       if (payload) {
-        // Set the process type based on the payload
+        
         setSelectedProcess(payload.process);
-        // Execute the static payload code with the payload name for display
+        
         handleExecuteCode(payload.code, payload.name);
       }
     }
   };
 
-  // Execute code
+  
   const handleExecuteCode = useCallback(async (codeToExecute = consoleInput, displayName = null) => {
     if (!config) {
       setConsoleOutput(prev => [...prev, {
@@ -147,7 +147,7 @@ const TerminalPanel = ({
     }
 
     try {
-      // Add to history (only add custom commands to history)
+      
       if (!displayName) {
         const newHistory = [codeToExecute, ...consoleHistory.filter(cmd => cmd !== codeToExecute)].slice(0, 100);
         setConsoleHistory(newHistory);
@@ -155,7 +155,7 @@ const TerminalPanel = ({
         localStorage.setItem('consoleHistory', JSON.stringify(newHistory));
       }
 
-      // Add command to output with pending status
+      
       setConsoleOutput(prev => [...prev, { 
         command: displayName || codeToExecute,
         isPayload: !!displayName,
@@ -163,7 +163,7 @@ const TerminalPanel = ({
         output: 'Executing...'
       }]);
 
-      // Encode code in base64
+      
       const encodedData = btoa(codeToExecute);
 
       console.log('🔍 Debug - Sending code via direct fetch:', {
@@ -203,17 +203,17 @@ const TerminalPanel = ({
         throw new Error('No job ID received from server');
       }
 
-      // Get the result using the job ID with polling
+      
       const resultData = await fetchResult(result.jobId);
 
-      // Update the last output entry with the result
+      
       setConsoleOutput(prev => {
         const newOutput = [...prev];
         const lastEntry = newOutput[newOutput.length - 1];
         if (lastEntry && lastEntry.command === (displayName || codeToExecute)) {
           if (resultData.error) {
             lastEntry.status = 'error';
-            // Format error with message and stack trace
+            
             lastEntry.output = `${resultData.error}\n\n${resultData.stack || ''}`;
           } else {
             lastEntry.status = 'success';
@@ -223,13 +223,13 @@ const TerminalPanel = ({
         return newOutput;
       });
 
-      // Clear input if this was from the console input
+      
       if (codeToExecute === consoleInput) {
         setConsoleInput('');
       }
     } catch (error) {
       console.error('Failed to execute code:', error);
-      // Update the last output entry with the error
+      
       setConsoleOutput(prev => {
         const newOutput = [...prev];
         const lastEntry = newOutput[newOutput.length - 1];
@@ -252,7 +252,7 @@ const TerminalPanel = ({
     isAppOnline
   ]);
 
-  // Fetch result with polling
+  
   const fetchResult = async (jobId, maxAttempts = 5) => {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
@@ -275,19 +275,19 @@ const TerminalPanel = ({
           throw new Error(`Invalid result JSON: ${resultText}`);
         }
 
-        // If we got a valid response with error or result, return it immediately
+        
         if (resultData.error || resultData.result !== undefined) {
           return resultData;
         }
 
-        // Only continue polling if the status is pending
+        
         if (resultData.status === 'pending') {
           console.log('🔍 Debug - Job still pending, waiting before retry...');
           await new Promise(resolve => setTimeout(resolve, 1000));
           continue;
         }
 
-        // If we get here, we have a completed status
+        
         return resultData;
       } catch (error) {
         if (attempt === maxAttempts - 1) {
@@ -300,7 +300,7 @@ const TerminalPanel = ({
     throw new Error('Failed to fetch result after maximum attempts');
   };
 
-  // Clear console output
+  
   const handleClearOutput = () => {
     setConsoleOutput([]);
   };
@@ -312,7 +312,7 @@ const TerminalPanel = ({
       height: '100%',
       gap: 2
     }}>
-      {/* Payload Selection */}
+      {}
       <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
         <FormControl size="small" sx={{ minWidth: 200 }}>
           <InputLabel id="payload-select-label">Select Payload</InputLabel>
@@ -339,7 +339,7 @@ const TerminalPanel = ({
         </Button>
       </Box>
 
-      {/* Process Selection */}
+      {}
       <FormControl size="small" sx={{ minWidth: 200 }}>
         <InputLabel id="process-select-label">Target Process</InputLabel>
         <Select
@@ -353,7 +353,7 @@ const TerminalPanel = ({
         </Select>
       </FormControl>
 
-      {/* Console Output */}
+      {}
       <Paper
         variant="outlined"
         sx={{
@@ -399,7 +399,7 @@ const TerminalPanel = ({
         <div ref={outputEndRef} />
       </Paper>
 
-      {/* Console Input */}
+      {}
       <Box sx={{ display: 'flex', gap: 1 }}>
         <TextField
           fullWidth

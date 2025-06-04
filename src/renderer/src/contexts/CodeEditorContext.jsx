@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 
 const CodeEditorContext = createContext(null);
 
-// File states
+
 const FILE_STATE = {
   UNCHANGED: 'UNCHANGED',
   UNSAVED: 'UNSAVED',
@@ -12,7 +12,7 @@ const FILE_STATE = {
 
 const STORAGE_KEY = 'code-editor-state';
 
-// Utility function to generate SHA256 hash
+
 const generateHash = async (content) => {
   const encoder = new TextEncoder();
   const data = encoder.encode(content);
@@ -21,7 +21,7 @@ const generateHash = async (content) => {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
-// Save/load from localStorage
+
 const saveToStorage = (state) => {
   try {
     const serialized = {
@@ -62,12 +62,12 @@ export function CodeEditorProvider({ children }) {
   const [currentHashes, setCurrentHashes] = useState(savedState?.currentHashes || new Map());
   const [focusedFile, setFocusedFile] = useState(savedState?.focusedFile || null);
 
-  // Save to localStorage whenever state changes
+  
   useEffect(() => {
     saveToStorage({ originalHashes, fileContents, currentHashes, focusedFile });
   }, [originalHashes, fileContents, currentHashes, focusedFile]);
 
-  // Initialize a file
+  
   const initializeFile = useCallback(async (filePath, content) => {
     try {
       const hash = await generateHash(content);
@@ -82,7 +82,7 @@ export function CodeEditorProvider({ children }) {
     }
   }, []);
 
-  // Update file content and hash
+  
   const updateFileContent = useCallback(async (filePath, newContent) => {
     try {
       const newHash = await generateHash(newContent);
@@ -90,7 +90,7 @@ export function CodeEditorProvider({ children }) {
       setFileContents(prev => new Map(prev).set(filePath, newContent));
       setCurrentHashes(prev => new Map(prev).set(filePath, newHash));
       
-      // Log state change for debugging
+      
       const originalHash = originalHashes.get(filePath);
       const state = originalHash === newHash ? 'UNCHANGED' : 'UNSAVED';
       console.log(`📝 Context: ${filePath} is now ${state}`);
@@ -99,7 +99,7 @@ export function CodeEditorProvider({ children }) {
     }
   }, [originalHashes]);
 
-  // Mark file as saved
+  
   const saveFile = useCallback((filePath) => {
     const currentHash = currentHashes.get(filePath);
     if (currentHash) {
@@ -108,7 +108,7 @@ export function CodeEditorProvider({ children }) {
     }
   }, [currentHashes]);
 
-  // Get file state
+  
   const getFileState = useCallback((filePath) => {
     const originalHash = originalHashes.get(filePath);
     const currentHash = currentHashes.get(filePath);
@@ -117,17 +117,17 @@ export function CodeEditorProvider({ children }) {
     return originalHash === currentHash ? FILE_STATE.UNCHANGED : FILE_STATE.UNSAVED;
   }, [originalHashes, currentHashes]);
 
-  // Get file content
+  
   const getFileContent = useCallback((filePath) => {
     return fileContents.get(filePath) || '';
   }, [fileContents]);
 
-  // Check if file is tracked
+  
   const isFileTracked = useCallback((filePath) => {
     return fileContents.has(filePath);
   }, [fileContents]);
 
-  // Remove file from tracking
+  
   const removeFile = useCallback((filePath) => {
     setOriginalHashes(prev => {
       const newMap = new Map(prev);
@@ -152,7 +152,7 @@ export function CodeEditorProvider({ children }) {
     console.log(`🗑️  Context: Removed ${filePath}`);
   }, [focusedFile]);
 
-  // Focus management
+  
   const setFocusedFilePath = useCallback((filePath) => {
     setFocusedFile(filePath);
   }, []);
@@ -165,17 +165,17 @@ export function CodeEditorProvider({ children }) {
     return focusedFile ? getFileState(focusedFile) : FILE_STATE.UNCHANGED;
   }, [focusedFile, getFileState]);
 
-  // Check if file has unsaved changes
+  
   const hasUnsavedChanges = useCallback((filePath) => {
     return getFileState(filePath) === FILE_STATE.UNSAVED;
   }, [getFileState]);
 
-  // Check if file is saved
+  
   const isFileSaved = useCallback((filePath) => {
     return getFileState(filePath) === FILE_STATE.SAVED;
   }, [getFileState]);
 
-  // Get all files with unsaved changes
+  
   const getUnsavedFiles = useCallback(() => {
     const unsavedFiles = [];
     for (const filePath of fileContents.keys()) {
@@ -186,12 +186,12 @@ export function CodeEditorProvider({ children }) {
     return unsavedFiles;
   }, [fileContents, hasUnsavedChanges]);
 
-  // Get all tracked files
+  
   const getAllTrackedFiles = useCallback(() => {
     return Array.from(fileContents.keys());
   }, [fileContents]);
 
-  // Clear all data
+  
   const clearStorage = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
     setOriginalHashes(new Map());

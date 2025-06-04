@@ -7,7 +7,7 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import { useTheme } from '../theme';
 import { js as beautifyJs } from 'js-beautify';
 
-// Panel Components
+
 import FileTree from '../components/analysis/FileTree';
 import CodeEditor from '../components/analysis/CodeEditor';
 import SearchTools from '../components/analysis/SearchTools';
@@ -19,33 +19,33 @@ import { useAnalysis } from '../contexts/AnalysisContext';
 
 const TABS_STORAGE_KEY = 'analysis-open-tabs';
 
-// File types that can be opened in the editor
+
 const EDITABLE_FILE_TYPES = [
-  // Code files
+  
   'javascript', 'typescript', 'python', 'java', 'cpp', 'c', 'csharp', 
   'php', 'ruby', 'go', 'rust', 'bash',
-  // Web files
+  
   'html', 'css', 'scss', 'sass', 'vue',
-  // Data files
+  
   'json', 'xml', 'yaml', 'toml', 'ini', 'env',
-  // Documentation
+  
   'markdown', 'text', 'restructuredtext'
 ];
 
-// File types that should be beautified
+
 const BEAUTIFY_FILE_TYPES = {
   'javascript': true,
   'html': true,
   'css': true
 };
 
-// File extensions that should be treated as JavaScript
+
 const JS_EXTENSIONS = ['js', 'cjs', 'mjs'];
 
-// File extensions that should be treated as shell scripts
+
 const SHELL_EXTENSIONS = ['sh', 'bash'];
 
-// Save open tabs to localStorage
+
 const saveOpenTabs = (openFiles, selectedTab, focusedPath) => {
   try {
     const tabData = {
@@ -65,7 +65,7 @@ const saveOpenTabs = (openFiles, selectedTab, focusedPath) => {
   }
 };
 
-// Load open tabs from localStorage
+
 const loadOpenTabs = () => {
   try {
     const saved = localStorage.getItem(TABS_STORAGE_KEY);
@@ -103,7 +103,7 @@ export default function Analysis() {
   const { getFileContent: apiGetFileContent } = useApi();
   const { fileTree, isLoading: isAnalysisLoading } = useAnalysis();
 
-  // Restore tabs on component mount
+  
   useEffect(() => {
     if (!hasInitialized) {
       const savedTabs = loadOpenTabs();
@@ -111,7 +111,7 @@ export default function Analysis() {
       if (savedTabs && savedTabs.openFiles && savedTabs.openFiles.length > 0) {
         console.log('🔄 Restoring tabs:', savedTabs.openFiles.map(f => f.path));
         
-        // Update the file contents with current tracked content
+        
         const restoredFiles = savedTabs.openFiles.map(file => ({
           ...file,
           content: getFileContent(file.path) || file.content
@@ -120,7 +120,7 @@ export default function Analysis() {
         setOpenFiles(restoredFiles);
         setFileTab(savedTabs.selectedTab || 0);
         
-        // Set selected file
+        
         const selectedIndex = Math.min(savedTabs.selectedTab || 0, restoredFiles.length - 1);
         setSelectedFile(restoredFiles[selectedIndex]);
         setFocusedFilePath(restoredFiles[selectedIndex].path);
@@ -130,7 +130,7 @@ export default function Analysis() {
     }
   }, [hasInitialized, getFileContent, setFocusedFilePath]);
 
-  // Save tabs whenever they change
+  
   useEffect(() => {
     if (hasInitialized && openFiles.length > 0) {
       saveOpenTabs(openFiles, fileTab, getFocusedFilePath());
@@ -138,13 +138,13 @@ export default function Analysis() {
   }, [openFiles, fileTab, hasInitialized, getFocusedFilePath]);
 
   const beautifyContent = (content, fileType, fileName) => {
-    // Check if file should be beautified
+    
     if (!BEAUTIFY_FILE_TYPES[fileType]) {
       return content;
     }
 
     try {
-      // Special handling for JavaScript files
+      
       if (fileType === 'javascript') {
         return beautifyJs(content, {
           indent_size: 2,
@@ -165,7 +165,7 @@ export default function Analysis() {
         });
       }
 
-      // HTML beautification
+      
       if (fileType === 'html') {
         return beautifyJs.html(content, {
           indent_size: 2,
@@ -188,7 +188,7 @@ export default function Analysis() {
         });
       }
 
-      // CSS beautification
+      
       if (fileType === 'css') {
         return beautifyJs.css(content, {
           indent_size: 2,
@@ -214,7 +214,7 @@ export default function Analysis() {
       return content;
     } catch (error) {
       console.error('Beautification failed:', error);
-      return content; // Return original content if beautification fails
+      return content; 
     }
   };
 
@@ -222,7 +222,7 @@ export default function Analysis() {
     console.log('Analysis: handleFileSelect called with path:', filePath);
     setFileError(null);
     
-    // Check if file is already open
+    
     const existingFileIndex = openFiles.findIndex(f => f.path === filePath);
     console.log('Existing file index:', existingFileIndex);
     
@@ -235,16 +235,16 @@ export default function Analysis() {
     }
 
     try {
-      // Find file in fileTree to check its type
+      
       const fileInfo = fileTree.find(f => f.path === filePath);
       if (!fileInfo) {
         throw new Error('File not found in file tree');
       }
 
-      // Get file extension
+      
       const extension = filePath.split('.').pop().toLowerCase();
       
-      // Determine file type
+      
       let fileType = fileInfo.type;
       if (JS_EXTENSIONS.includes(extension)) {
         fileType = 'javascript';
@@ -254,14 +254,14 @@ export default function Analysis() {
 
       console.log('File type determined:', fileType);
 
-      // Check if file type is editable
+      
       if (!EDITABLE_FILE_TYPES.includes(fileType)) {
         setFileError(`Cannot open ${fileType} files in the editor`);
         console.log('File type not supported:', fileType);
         return;
       }
 
-      // Get file content from API
+      
       console.log('Fetching file content from API:', filePath);
       const content = await apiGetFileContent(filePath);
       console.log('File content received:', !!content);
@@ -271,7 +271,7 @@ export default function Analysis() {
         return;
       }
 
-      // Beautify content if needed
+      
       const beautifiedContent = beautifyContent(content, fileType, filePath);
       console.log('Content beautified:', content !== beautifiedContent);
 
@@ -280,7 +280,7 @@ export default function Analysis() {
         path: filePath,
         content: beautifiedContent,
         type: fileType,
-        originalContent: content // Store original content for comparison
+        originalContent: content 
       };
       console.log('Creating new file object:', newFile);
 
@@ -306,7 +306,7 @@ export default function Analysis() {
     
     console.log(`🚪 Closing tab: ${fileToClose.path}`);
     
-    // Remove from context tracking
+    
     removeFile(fileToClose.path);
     
     const newOpenFiles = openFiles.filter((_, i) => i !== index);
@@ -316,7 +316,7 @@ export default function Analysis() {
       setSelectedFile(null);
       setFileTab(0);
       setFocusedFilePath(null);
-      // Clear saved tabs when no tabs are open
+      
       localStorage.removeItem(TABS_STORAGE_KEY);
     } else if (index <= fileTab) {
       const newTabIndex = Math.max(0, fileTab - 1);
@@ -360,13 +360,13 @@ export default function Analysis() {
     
     switch (fileState) {
       case FILE_STATE.UNCHANGED:
-        return theme.palette.text.secondary; // gray
+        return theme.palette.text.secondary; 
       case FILE_STATE.UNSAVED:
-        return theme.palette.warning.main; // orange
+        return theme.palette.warning.main; 
       case FILE_STATE.SAVED:
-        return theme.palette.success.main; // green
+        return theme.palette.success.main; 
       default:
-        return theme.palette.text.secondary; // gray fallback
+        return theme.palette.text.secondary; 
     }
   };
 

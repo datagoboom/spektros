@@ -21,7 +21,7 @@ export default function UtilityBarConfig() {
 
   const handleOpenFile = async () => {
     try {
-      // Open file dialog to select ASAR file
+      
       const filePath = await openFileDialog({
         filters: [
           { name: 'ASAR Files', extensions: ['asar'] }
@@ -35,14 +35,14 @@ export default function UtilityBarConfig() {
 
       console.log('Selected ASAR file:', filePath);
       
-      // Extract ASAR and build file tree
+      
       const result = await loadAsar(filePath);
       console.log('ASAR extracted to:', result.tmpDir);
       
-      // Initialize analysis context with the new temp directory
+      
       await initializeAnalysis(result.tmpDir);
       
-      // Update the file tree in analysis context
+      
       if (result.tree) {
         updateFileTree(result.tree);
       }
@@ -50,7 +50,7 @@ export default function UtilityBarConfig() {
       setHasOpenFile(true);
     } catch (err) {
       console.error('Failed to open ASAR:', err);
-      // Error is already handled by ApiContext
+      
     }
   };
 
@@ -61,7 +61,7 @@ export default function UtilityBarConfig() {
     }
 
     try {
-      // Open save dialog to choose where to save the repacked ASAR
+      
       const result = await saveFileDialog({
         filters: [
           { name: 'ASAR Files', extensions: ['asar'] }
@@ -73,7 +73,7 @@ export default function UtilityBarConfig() {
         return;
       }
 
-      // Repack the ASAR file
+      
       const repackResult = await repackAsar(tmpDir, result.filePath);
       
       if (repackResult.success) {
@@ -90,13 +90,13 @@ export default function UtilityBarConfig() {
     const filePath = getFocusedFilePath();
     if (filePath) {
       try {
-        // Get the current content from the code editor context
+        
         const content = getFileContent(filePath);
         
-        // Save the file content to disk
+        
         await saveFile(filePath, content);
         
-        // Mark the file as saved in the context
+        
         saveFile(filePath);
         
         console.log(`💾 Saved file: ${filePath}`);

@@ -7,9 +7,9 @@ export function ApiProvider({ children }) {
   const [error, setError] = useState(null);
   const [currentAsarInfo, setCurrentAsarInfo] = useState(null);
   const [isSetupComplete, setIsSetupComplete] = useState(false);
-  const [fileTree, setFileTree] = useState([]); // Re-added fileTree state
+  const [fileTree, setFileTree] = useState([]); 
 
-  // Helper to handle API responses
+  
   const handleApiCall = useCallback(async (apiCall, loadingMessage = 'Processing...') => {
     setIsLoading(true);
     setError(null);
@@ -33,7 +33,7 @@ export function ApiProvider({ children }) {
     }
   }, []);
 
-  // NEW: Setup injection system
+  
   const setupInjection = useCallback(async (asarPath) => {
     const result = await handleApiCall(
       () => window.api.inject.setup(asarPath),
@@ -52,7 +52,7 @@ export function ApiProvider({ children }) {
     return result;
   }, [handleApiCall]);
 
-  // ASAR Analysis API (for advanced users)
+  
   const extractAsar = useCallback(async (asarPath) => {
     const result = await handleApiCall(
       () => window.api.analysis.extractAsar(asarPath),
@@ -80,7 +80,7 @@ export function ApiProvider({ children }) {
     return result;
   }, [handleApiCall]);
 
-  // Search API
+  
   const searchFiles = useCallback(async (tmpDir, searchQuery, options = {}) => {
     const result = await handleApiCall(
       () => window.api.analysis.search(tmpDir, searchQuery, options),
@@ -97,7 +97,7 @@ export function ApiProvider({ children }) {
     };
   }, [handleApiCall]);
 
-  // Payload Management API
+  
   const createPayload = useCallback(async (name, content, category = 'custom') => {
     const result = await handleApiCall(
       () => window.api.inject.createPayload(name, content, category),
@@ -116,7 +116,7 @@ export function ApiProvider({ children }) {
     return result;
   }, [handleApiCall]);
 
-  // Backup Management API
+  
   const listBackups = useCallback(async (asarPath = null) => {
     const result = await handleApiCall(
       () => window.api.inject.listBackups(asarPath),
@@ -132,7 +132,7 @@ export function ApiProvider({ children }) {
       'Restoring from backup'
     );
     
-    // Reset setup state after restore
+    
     setIsSetupComplete(false);
     setCurrentAsarInfo(null);
     
@@ -149,7 +149,7 @@ export function ApiProvider({ children }) {
   }, [handleApiCall]);
 
 
-  // File Dialog API
+  
   const openFileDialog = useCallback(async (options = {}) => {
     try {      
       const result = await window.api.fileDialog.openFile(options);
@@ -179,19 +179,19 @@ export function ApiProvider({ children }) {
     }
   }, []);
 
-  // Complete workflow: extract ASAR and build file tree (utility function)
+  
   const loadAsar = useCallback(async (asarPath) => {
     try {
-      // Extract ASAR
+      
       const extractResult = await extractAsar(asarPath);
       
-      // Build file tree
+      
       const treeResult = await handleApiCall(
         () => window.api.analysis.getFileTree(extractResult.tmpDir),
         `Building file tree: ${extractResult.tmpDir}`
       );
       
-      // Store file tree in context state
+      
       setFileTree(treeResult.tree);
       
       return {
@@ -204,7 +204,7 @@ export function ApiProvider({ children }) {
     }
   }, [extractAsar, handleApiCall]);
 
-  // Utility functions
+  
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -217,7 +217,7 @@ export function ApiProvider({ children }) {
     setIsLoading(false);
   }, []);
 
-  // New: All-in-one hook injection
+  
   const injectHook = useCallback(async (config, customTarget = null) => {
     const result = await handleApiCall(
       () => window.api.inject.hook(config, customTarget),
@@ -227,45 +227,45 @@ export function ApiProvider({ children }) {
   }, [handleApiCall]);
 
   const value = {
-    // State
+    
     isLoading,
     error,
     currentAsarInfo,
     isSetupComplete,
-    fileTree, // Re-added fileTree to context value
+    fileTree, 
     
-    // NEW: Main setup function
+    
     setupInjection,
     
-    // ASAR operations (for advanced use)
+    
     extractAsar,
     getFileContent,
     saveFile,
-    loadAsar, // Re-added loadAsar utility function
+    loadAsar, 
     
-    // Search operations
+    
     searchFiles,
     
-    // Payload operations
+    
     createPayload,
     injectPayload,
     
-    // Backup operations
+    
     listBackups,
     restoreBackup,
     deleteBackup,
     
 
-    // File dialogs
+    
     openFileDialog,
     saveFileDialog,
     
-    // Utilities
+    
     clearError,
     resetState,
     injectHook,
 
-    // ASAR repacking
+    
     repackAsar: async (sourceDir, outputPath) => {
       const result = await handleApiCall(
         () => window.api.analysis.repack(sourceDir, outputPath),
