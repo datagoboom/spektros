@@ -2,10 +2,10 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 
 const AnalysisContext = createContext(null);
 
-// Storage key for persisting analysis state
+
 const STORAGE_KEY = 'analysis-state';
 
-// Save/load from localStorage
+
 const saveToStorage = (state) => {
   try {
     const serialized = {
@@ -44,14 +44,14 @@ export function AnalysisProvider({ children }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Save to localStorage whenever state changes
+  
   React.useEffect(() => {
     if (tmpDir || fileTree.length > 0) {
       saveToStorage({ tmpDir, fileTree });
     }
   }, [tmpDir, fileTree]);
 
-  // Initialize analysis with a new temporary directory
+  
   const initializeAnalysis = useCallback(async (newTmpDir) => {
     try {
       setIsLoading(true);
@@ -66,7 +66,7 @@ export function AnalysisProvider({ children }) {
     }
   }, []);
 
-  // Update file tree
+  
   const updateFileTree = useCallback((newFileTree) => {
     try {
       setFileTree(newFileTree);
@@ -77,7 +77,7 @@ export function AnalysisProvider({ children }) {
     }
   }, []);
 
-  // Clear analysis state
+  
   const clearAnalysis = useCallback(() => {
     setTmpDir(null);
     setFileTree([]);
@@ -86,17 +86,17 @@ export function AnalysisProvider({ children }) {
     console.log('🗑️  Analysis: Cleared all state');
   }, []);
 
-  // Get file by path
+  
   const getFileByPath = useCallback((filePath) => {
     return fileTree.find(file => file.path === filePath);
   }, [fileTree]);
 
-  // Get files by type
+  
   const getFilesByType = useCallback((fileType) => {
     return fileTree.filter(file => file.type === fileType);
   }, [fileTree]);
 
-  // Get files by directory
+  
   const getFilesByDirectory = useCallback((directory) => {
     return fileTree.filter(file => file.relativePath.startsWith(directory));
   }, [fileTree]);

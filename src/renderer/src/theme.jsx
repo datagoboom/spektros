@@ -2,7 +2,7 @@ import { createTheme } from '@mui/material/styles';
 import { useSettings } from './contexts/SettingsContext';
 import React from 'react';
 
-// Default theme as fallback
+
 const defaultTheme = {
     palette: {
         primary: {
@@ -51,7 +51,7 @@ const defaultTheme = {
     },
 };
 
-// Create a hook to get the current theme
+
 export function useTheme() {
     const { settings } = useSettings();
     const [themeData, setThemeData] = React.useState(defaultTheme);
@@ -72,8 +72,8 @@ export function useTheme() {
     return createTheme(themeData);
 }
 
-// Export a default theme for components that can't use hooks
+
 export const theme = createTheme(defaultTheme);
 
-// Also provide a default export for backward compatibility
+
 export default theme;

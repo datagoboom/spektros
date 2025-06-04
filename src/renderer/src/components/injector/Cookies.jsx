@@ -36,7 +36,7 @@ import { useInjector } from '../../contexts/InjectorContext';
 export default function Cookies({ appConfig }) {
   const theme = useTheme();
   const { selectedApp } = useInjector();
-  // Get state from context
+  
   const {
     cookiesData, setCookiesData,
     cookiesError, setCookiesError,
@@ -49,10 +49,10 @@ export default function Cookies({ appConfig }) {
     cookiesSaveStatus, setCookiesSaveStatus
   } = useInjector();
 
-  // Use appConfig or selectedApp, similar to AppInfo.jsx
+  
   const config = appConfig || selectedApp;
 
-  // Use config.port for requests
+  
   const fetchCookies = async () => {
     if (!config || !config.ip || !config.port) {
       setCookiesError('Selected app is missing IP or port information.');
@@ -63,7 +63,7 @@ export default function Cookies({ appConfig }) {
     setCookiesError(null);
     
     try {
-      // Encode the cookie fetching code
+      
       const code = `
         const cookieData = {
           source: 'main-process',
@@ -119,7 +119,7 @@ export default function Cookies({ appConfig }) {
         throw new Error('No job ID received');
       }
 
-      // Poll for the result
+      
       const maxAttempts = 5;
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         const resultResponse = await fetch(`http://${config.ip}:${config.port}/result/${result.jobId}`);
@@ -160,16 +160,16 @@ export default function Cookies({ appConfig }) {
     };
   }, [cookiesIsPolling, cookiesPollInterval, config]);
 
-  // Add effect to handle polling state changes
+  
   useEffect(() => {
-    // If polling is turned off, clear any existing data
+    
     if (!cookiesIsPolling) {
       setCookiesData(null);
       setCookiesError(null);
     }
   }, [cookiesIsPolling]);
 
-  // Update editValue when expandedRow changes
+  
   useEffect(() => {
     if (cookiesExpandedRow !== null && cookiesData && cookiesData.cookies[cookiesExpandedRow]) {
       setCookiesEditValue(cookiesData.cookies[cookiesExpandedRow].value);
@@ -178,7 +178,7 @@ export default function Cookies({ appConfig }) {
     }
   }, [cookiesExpandedRow, cookiesData, setCookiesEditValue]);
 
-  // Function to get a valid URL for the cookie
+  
   const getCookieUrl = (cookie) => {
     const protocol = cookie.secure ? 'https://' : 'http://';
     const domain = (cookie.domain || '').replace(/^\./, '');
@@ -186,7 +186,7 @@ export default function Cookies({ appConfig }) {
     return `${protocol}${domain}${path}`;
   };
 
-  // Function to update cookie in the app
+  
   const handleSave = async (cookie, newValue) => {
     if (!config || !config.ip || !config.port) {
       setCookiesSaveStatus({ type: 'error', message: 'Selected app is missing IP or port information.' });
@@ -196,7 +196,7 @@ export default function Cookies({ appConfig }) {
     setCookiesIsSaving(true);
     setCookiesSaveStatus(null);
     try {
-      // Build the update payload as a string
+      
       const updatePayload = `
         async function(cookie) {
           try {
@@ -208,9 +208,9 @@ export default function Cookies({ appConfig }) {
           }
         }
       `;
-      // Build the cookie object to send, including a valid url
+      
       const cookieToSet = { ...cookie, value: newValue, url: getCookieUrl(cookie) };
-      // Send the payload and argument
+      
       const code = `(${updatePayload})(${JSON.stringify(cookieToSet)})`;
       const encodedData = window.btoa(unescape(encodeURIComponent(code)));
       const response = await fetch(`http://${config.ip}:${config.port}/console`, {
@@ -229,7 +229,7 @@ export default function Cookies({ appConfig }) {
       });
       const result = await response.json();
       if (!result.jobId) throw new Error('No job ID received');
-      // Poll for the result
+      
       const maxAttempts = 5;
       let resultData = null;
       for (let attempt = 0; attempt < maxAttempts; attempt++) {

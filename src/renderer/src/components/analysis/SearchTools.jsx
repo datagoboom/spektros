@@ -1,5 +1,5 @@
-// this component will be connected to the backend to perform search operations across the codebase
-// we will not connect it to the backend for now, we just want to show the UI
+
+
 
 import React, { useState, useCallback } from 'react';
 import { 
@@ -39,7 +39,7 @@ import { useApi } from '../../contexts/ApiContext';
 import { useAnalysis } from '../../contexts/AnalysisContext';
 import Highlighter from 'react-highlight-words';
 
-// Mock search results for now
+
 const mockSearchResults = {
     'src/components/Button.jsx': [
         { line: 12, content: 'const Button = ({ children, variant = \'primary\' }) => {' },
@@ -144,10 +144,10 @@ export default function SearchTools() {
                 }
             );
 
-            // Refresh search results after replace
+            
             await handleSearch();
             
-            // Show success message
+            
             setError({
                 type: 'success',
                 message: `Successfully replaced ${results.totalReplacements} occurrences in ${results.filesModified} files`
@@ -188,7 +188,7 @@ export default function SearchTools() {
         setAnchorEl(null);
     };
 
-    // Handle Enter key press in search field
+    
     const handleSearchKeyPress = (event) => {
         if (event.key === 'Enter') {
             handleSearch();
@@ -207,7 +207,7 @@ export default function SearchTools() {
                 color: theme.palette.text.primary,
             }}
         >
-            {/* Search Box */}
+            {}
             <Box sx={{ p: 2, borderBottom: 1, borderColor: theme.palette.background.nav }}>
                 {error && (
                     <Alert 
@@ -287,7 +287,7 @@ export default function SearchTools() {
                     </IconButton>
                 </Box>
 
-                {/* Replace Box */}
+                {}
                 <Collapse in={showReplace}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
                         <TextField
@@ -323,7 +323,7 @@ export default function SearchTools() {
                     </Box>
                 </Collapse>
 
-                {/* Search Stats */}
+                {}
                 {searchStats && (
                     <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Typography variant="caption" color="text.secondary">
@@ -336,7 +336,7 @@ export default function SearchTools() {
                 )}
             </Box>
 
-            {/* Search Results */}
+            {}
             <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
                 <List sx={{ p: 0 }}>
                     {Object.entries(searchResults).map(([filePath, fileResult]) => (
@@ -426,7 +426,7 @@ export default function SearchTools() {
                 </List>
             </Box>
 
-            {/* Options Menu */}
+            {}
             <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}

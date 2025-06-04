@@ -40,10 +40,10 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useTheme } from '../../theme';
 import { useInjector } from '../../contexts/InjectorContext';
 
-// Enhanced IPC Monitor with improved performance and features
+
 export default function IPCMonitor({ appConfig }) {
   const theme = useTheme();
-  // Get state from context
+  
   const {
     ipcIsUploaded, setIpcIsUploaded,
     ipcIsStreaming, setIpcIsStreaming,
@@ -57,7 +57,7 @@ export default function IPCMonitor({ appConfig }) {
     saveAppSettings,
   } = useInjector();
 
-  // Always define app at the top level for use throughout the component
+  
   const app = appConfig;
 
   let config = appConfig
@@ -71,7 +71,7 @@ export default function IPCMonitor({ appConfig }) {
   }
 
   
-  // Enhanced port calculation with debugging
+  
   const ipcMonitorPort = useMemo(() => {
     const app = appConfig;
 
@@ -92,7 +92,7 @@ export default function IPCMonitor({ appConfig }) {
       return app.ipc_monitor_port;
     }
     
-    // Fallback to hookedAppSettings
+    
     const appSettings = hookedAppSettings[app.uuid];
     if (appSettings?.ipc_monitor_port) {
       console.log(`[IPC-MONITOR] Using settings port ${appSettings.ipc_monitor_port} for app ${app.uuid}`);
@@ -103,7 +103,7 @@ export default function IPCMonitor({ appConfig }) {
     return null;
   }, [appConfig, hookedAppSettings]);
   
-  // Local state for enhanced features
+  
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [messageCount, setMessageCount] = useState(0);
   const [filterText, setFilterText] = useState('');
@@ -121,7 +121,7 @@ export default function IPCMonitor({ appConfig }) {
   const lastPingRef = useRef(null);
   const reconnectLock = useRef(false);
 
-  // Enhanced payload with better error handling and monitoring
+  
   const getPayloadCode = useCallback((port) => `
     (function() {
       'use strict';
@@ -659,7 +659,7 @@ export default function IPCMonitor({ appConfig }) {
 
   
   
-  // Enhanced WebSocket connection with better port resolution
+  
   
   const connectWebSocket = useCallback(() => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -668,8 +668,8 @@ export default function IPCMonitor({ appConfig }) {
   
     const app = appConfig;
     
-    // Get the port - prefer direct from app object, fallback to settings
-    let portToUse = 10012; // default fallback
+    
+    let portToUse = 10012; 
     
     if (app?.ipc_monitor_port) {
       portToUse = app.ipc_monitor_port;
@@ -759,7 +759,7 @@ export default function IPCMonitor({ appConfig }) {
   }, [maxMessages, reconnectAttempts, hasRetried, appConfig, hookedAppSettings, ipcMonitorPort]);
   
 
-  // Enhanced upload function that ensures port is saved before connecting
+  
   const handleUpload = async () => {
     setIpcIsUploading(true);
     setIpcError(null);
@@ -779,15 +779,15 @@ export default function IPCMonitor({ appConfig }) {
         throw new Error('Selected app is missing UUID');
       }
   
-      // Use the app's assigned main debug port for payload upload
+      
       const debugPort = app.port;
       
-      // Get the IPC monitor port (should already be assigned)
+      
       let monitorPort = app.ipc_monitor_port;
       if (!monitorPort) {
         monitorPort = getNextIpcMonitorPort(hookedAppSettings);
         console.log(`[IPC-MONITOR] Assigning new monitor port ${monitorPort} to app ${app.uuid}`);
-        // Save the new port to the app's settings
+        
         saveAppSettings({ ...app, ipc_monitor_port: monitorPort });
       }
   
@@ -796,7 +796,7 @@ export default function IPCMonitor({ appConfig }) {
       const code = getPayloadCode(monitorPort);
       const encodedData = window.btoa(unescape(encodeURIComponent(code)));
       
-      // Send payload to the app's main debug port
+      
       const response = await fetch(`http://${app.ip}:${debugPort}/console`, {
         method: 'POST',
         headers: {
@@ -821,7 +821,7 @@ export default function IPCMonitor({ appConfig }) {
         throw new Error('No job ID received from server');
       }
       
-      // Enhanced polling with exponential backoff
+      
       const maxAttempts = 10;
       let attempt = 0;
       let delay = 500;
@@ -843,7 +843,7 @@ export default function IPCMonitor({ appConfig }) {
         if (resultData.status === 'completed') {
           setIpcIsUploaded(true);
           console.log(`[IPC-MONITOR] Payload uploaded successfully to ${app.ip}:${debugPort}, WebSocket will be on port ${monitorPort}`);
-          // Automatically connect after successful upload
+          
           setTimeout(() => connectWebSocket(), 1000);
           break;
         }
@@ -866,19 +866,19 @@ export default function IPCMonitor({ appConfig }) {
   };
   
 
-  // Connect WebSocket after upload and port assignment
+  
   useEffect(() => {
-    // Only auto-connect if we just uploaded the payload
+    
     if (ipcIsUploaded && connectionStatus === 'disconnected' && ipcMonitorPort !== null) {
       connectWebSocket();
     }
-    // eslint-disable-next-line
+    
   }, [ipcIsUploaded, ipcMonitorPort]);
 
-  // Enhanced disconnect function
+  
   const handleDisconnect = useCallback(() => {
-    // Stop auto-reconnect attempts
-    setHasRetried(false); // Reset retry flag on manual disconnect
+    
+    setHasRetried(false); 
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
@@ -892,7 +892,7 @@ export default function IPCMonitor({ appConfig }) {
     setReconnectAttempts(0);
   }, []);
 
-  // Reset monitor state to allow reconnecting to restarted app
+  
   const handleResetPayload = useCallback(() => {
     handleDisconnect();
     setIpcIsUploaded(false);
@@ -903,7 +903,7 @@ export default function IPCMonitor({ appConfig }) {
     setHasRetried(false);
   }, [handleDisconnect]);
 
-  // Filter messages based on search text
+  
   const filteredTraffic = useMemo(() => {
     if (!filterText.trim()) return ipcTraffic;
     
@@ -915,14 +915,14 @@ export default function IPCMonitor({ appConfig }) {
     );
   }, [ipcTraffic, filterText]);
 
-  // Auto-scroll to bottom when new messages arrive
+  
   useEffect(() => {
     if (autoScroll && tableContainerRef.current) {
       tableContainerRef.current.scrollTop = tableContainerRef.current.scrollHeight;
     }
   }, [filteredTraffic, autoScroll]);
 
-  // Export function
+  
   const handleExport = useCallback(() => {
     const exportData = {
       exported: new Date().toISOString(),
@@ -942,14 +942,14 @@ export default function IPCMonitor({ appConfig }) {
     URL.revokeObjectURL(url);
   }, [ipcTraffic, appConfig]);
 
-  // Cleanup on unmount
+  
   useEffect(() => {
     return () => {
       handleDisconnect();
     };
   }, [handleDisconnect]);
 
-  // Connection status indicator
+  
   const getStatusColor = () => {
     switch (connectionStatus) {
       case 'connected': return 'success';
@@ -959,10 +959,10 @@ export default function IPCMonitor({ appConfig }) {
     }
   };
 
-  // Reset monitor when selected app changes
+  
   useEffect(() => {
     handleResetPayload();
-    // eslint-disable-next-line
+    
   }, [config?.uuid]);
 
   return (
@@ -974,7 +974,7 @@ export default function IPCMonitor({ appConfig }) {
       display: 'flex',
       flexDirection: 'column'
     }}>
-      {/* Header */}
+      {}
       <Box sx={{ 
         display: 'flex', 
         alignItems: 'center', 
@@ -997,7 +997,7 @@ export default function IPCMonitor({ appConfig }) {
         </Box>
         
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {/* Only show upload button if no port is assigned */}
+          {}
           {!ipcMonitorPort && (
             <Tooltip title="Upload payload">
               <span>
@@ -1013,7 +1013,7 @@ export default function IPCMonitor({ appConfig }) {
             </Tooltip>
           )}
           
-          {/* Only show connect button if port is assigned */}
+          {}
           {ipcMonitorPort && (
             <Tooltip title="Connect to WebSocket">
               <span>
@@ -1093,14 +1093,14 @@ export default function IPCMonitor({ appConfig }) {
         </Box>
       </Box>
 
-      {/* Error Alert */}
+      {}
       {ipcError && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setIpcError(null)}>
           {ipcError}
         </Alert>
       )}
 
-      {/* Settings Panel */}
+      {}
       <Collapse in={showSettings}>
         <Paper sx={{ p: 2, mb: 2, backgroundColor: theme.palette.background.paper }}>
           <Typography variant="subtitle2" gutterBottom>Settings</Typography>
@@ -1130,7 +1130,7 @@ export default function IPCMonitor({ appConfig }) {
         </Paper>
       </Collapse>
 
-      {/* Filter and Tabs */}
+      {}
       <Box sx={{ mb: 2 }}>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 1 }}>
           <TextField
@@ -1163,7 +1163,7 @@ export default function IPCMonitor({ appConfig }) {
         </Tabs>
       </Box>
 
-      {/* Traffic Table */}
+      {}
       <Box sx={{ 
         flexGrow: 1,
         overflowY: 'auto',
@@ -1278,7 +1278,7 @@ export default function IPCMonitor({ appConfig }) {
                       </TableCell>
                     </TableRow>,
                     
-                    // Expanded row
+                    
                     ipcExpandedRow === index && (
                       <TableRow key={`${item.id || index}-expanded`}>
                         <TableCell colSpan={7} sx={{ backgroundColor: theme.palette.background.terminal, p: 2 }}>
@@ -1359,7 +1359,7 @@ export default function IPCMonitor({ appConfig }) {
         )}
       </Box>
       
-      {/* Status Bar */}
+      {}
       <Box sx={{ 
         mt: 1, 
         pt: 1, 

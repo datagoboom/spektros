@@ -16,7 +16,7 @@ import { useTheme } from '../../theme';
 import { useAnalysis } from '../../contexts/AnalysisContext';
 import { useState, useMemo } from 'react';
 
-// Map file types to icons
+
 const getFileIcon = (fileType, theme) => {
     switch (fileType) {
         case 'javascript':
@@ -50,9 +50,9 @@ const getFileIcon = (fileType, theme) => {
     }
 };
 
-// Convert flat file tree to nested structure
+
 const buildTreeFromFiles = (files) => {
-    // Add safety check for undefined/null files
+    
     if (!files || !Array.isArray(files)) {
         console.log('Files is not an array:', files);
         return [];
@@ -65,7 +65,7 @@ const buildTreeFromFiles = (files) => {
     const tree = [];
     const pathMap = new Map();
 
-    // Sort files by relative path for consistent tree building
+    
     files.sort((a, b) => {
         const pathA = a?.relativePath || '';
         const pathB = b?.relativePath || '';
@@ -73,7 +73,7 @@ const buildTreeFromFiles = (files) => {
     });
 
     files.forEach(file => {
-        // Safety check for file structure
+        
         if (!file || !file.relativePath) {
             console.warn('Invalid file object:', file);
             return;
@@ -115,7 +115,7 @@ const buildTreeFromFiles = (files) => {
     return tree;
 };
 
-// Helper function to find an item by ID in the tree
+
 function findItemById(items, id) {
     if (!items || !Array.isArray(items)) {
         return null;
@@ -135,7 +135,7 @@ function findItemById(items, id) {
     return null;
 }
 
-// Filter tree data based on search term and return flat list of matches
+
 const filterTreeData = (treeData, searchTerm) => {
     if (!searchTerm) return { treeData, flatMatches: [] };
 
@@ -145,7 +145,7 @@ const filterTreeData = (treeData, searchTerm) => {
     const findMatches = (node, currentPath = '') => {
         const fullPath = currentPath ? `${currentPath}/${node.label}` : node.label;
         
-        // If node matches search, add it to matches
+        
         if (node.label.toLowerCase().includes(searchLower)) {
             flatMatches.push({
                 ...node,
@@ -153,7 +153,7 @@ const filterTreeData = (treeData, searchTerm) => {
             });
         }
 
-        // Recursively check children
+        
         if (node.children) {
             node.children.forEach(child => findMatches(child, fullPath));
         }
@@ -170,15 +170,15 @@ export default function FileTree({ onFileSelect }) {
     
     console.log('FileTree render - fileTree:', fileTree, 'isLoading:', isLoading);
     
-    // Build tree data with safety checks
+    
     const treeData = buildTreeFromFiles(fileTree);
     
-    // Filter tree data based on search term
+    
     const { treeData: filteredTreeData, flatMatches } = useMemo(() => {
         return filterTreeData(treeData, searchTerm);
     }, [treeData, searchTerm]);
 
-    // Show loading state
+    
     if (isLoading) {
         return (
             <Container
@@ -199,7 +199,7 @@ export default function FileTree({ onFileSelect }) {
         );
     }
 
-    // Show empty state
+    
     if (!fileTree || !Array.isArray(fileTree) || fileTree.length === 0) {
         return (
             <Container
@@ -222,7 +222,7 @@ export default function FileTree({ onFileSelect }) {
         );
     }
 
-    // Show tree
+    
     return (
         <Container
             maxWidth={false}
@@ -247,7 +247,7 @@ export default function FileTree({ onFileSelect }) {
                 },
             }}
         >
-            {/* Search Bar */}
+            {}
             <Box sx={{ width: '100%', mb: 2 }}>
                 <TextField
                     fullWidth
@@ -280,7 +280,7 @@ export default function FileTree({ onFileSelect }) {
             </Box>
 
             {searchTerm ? (
-                // Show flat list of matches when searching
+                
                 <Box sx={{ width: '100%' }}>
                     {flatMatches.length > 0 ? (
                         flatMatches.map((match, index) => (
@@ -327,7 +327,7 @@ export default function FileTree({ onFileSelect }) {
                     )}
                 </Box>
             ) : (
-                // Show tree view when not searching
+                
                 filteredTreeData.length > 0 ? (
                     <RichTreeView
                         items={filteredTreeData}

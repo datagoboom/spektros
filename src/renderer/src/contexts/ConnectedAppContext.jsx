@@ -13,11 +13,11 @@ export const ConnectedAppProvider = ({ children }) => {
     lastUpdateTime: null 
   })
 
-  // Cleanup timer ref
+  
   const cleanupTimerRef = useRef(null)
-  const autoCleanupInterval = 5 * 60 * 1000 // 5 minutes
+  const autoCleanupInterval = 5 * 60 * 1000 
 
-  // Check server status
+  
   const checkServerStatus = useCallback(async () => {
     try {
       const result = await window.api.inject.getServerStatus()
@@ -34,7 +34,7 @@ export const ConnectedAppProvider = ({ children }) => {
     }
   }, [])
 
-  // Start the call-home listener
+  
   const startListener = useCallback(async () => {
     try {
       const result = await window.api.inject.startListener()
@@ -52,7 +52,7 @@ export const ConnectedAppProvider = ({ children }) => {
     }
   }, [checkServerStatus])
 
-  // Stop the call-home listener
+  
   const stopListener = useCallback(async () => {
     try {
       const result = await window.api.inject.stopListener()
@@ -68,7 +68,7 @@ export const ConnectedAppProvider = ({ children }) => {
     }
   }, [checkServerStatus])
 
-  // Clean up old app entries
+  
   const cleanupOldApps = useCallback(() => {
     const now = Date.now()
     const cutoff = now - autoCleanupInterval
@@ -93,12 +93,12 @@ export const ConnectedAppProvider = ({ children }) => {
     })
   }, [autoCleanupInterval])
 
-  // Manual cleanup trigger
+  
   const forceCleanup = useCallback(() => {
     cleanupOldApps()
   }, [cleanupOldApps])
 
-  // Clear all app data
+  
   const clearApps = useCallback(() => {
     setApps(new Map())
     setLatestUpdate(null)
@@ -106,12 +106,12 @@ export const ConnectedAppProvider = ({ children }) => {
     console.log('🗑️ All app data cleared')
   }, [])
 
-  // Get specific app by UUID
+  
   const getApp = useCallback((uuid) => {
     return apps.get(uuid) || null
   }, [apps])
 
-  // Get apps as array with optional filtering
+  
   const getApps = useCallback((filter) => {
     const appsArray = Array.from(apps.values())
     if (filter && typeof filter === 'function') {
@@ -120,33 +120,33 @@ export const ConnectedAppProvider = ({ children }) => {
     return appsArray
   }, [apps])
 
-  // Get apps by status
+  
   const getOnlineApps = useCallback(() => {
     const now = Date.now()
-    const onlineThreshold = 2 * 60 * 1000 // 2 minutes
+    const onlineThreshold = 2 * 60 * 1000 
     return getApps(app => (now - app.lastSeen) < onlineThreshold)
   }, [getApps])
 
   const getOfflineApps = useCallback(() => {
     const now = Date.now()
-    const onlineThreshold = 2 * 60 * 1000 // 2 minutes
+    const onlineThreshold = 2 * 60 * 1000 
     return getApps(app => (now - app.lastSeen) >= onlineThreshold)
   }, [getApps])
 
-  // Check if specific app is online
+  
   const isAppOnline = useCallback((uuid) => {
     const app = getApp(uuid)
     if (!app) return false
     
     const now = Date.now()
-    const onlineThreshold = 2 * 60 * 1000 // 2 minutes
+    const onlineThreshold = 2 * 60 * 1000 
     return (now - app.lastSeen) < onlineThreshold
   }, [getApp])
 
-  // Update app status (online/offline) based on last seen
+  
   const updateAppStatuses = useCallback(() => {
     const now = Date.now()
-    const onlineThreshold = 2 * 60 * 1000 // 2 minutes
+    const onlineThreshold = 2 * 60 * 1000 
     
     setApps(prev => {
       const updated = new Map()
@@ -166,14 +166,14 @@ export const ConnectedAppProvider = ({ children }) => {
     })
   }, [])
 
-  // Set up call-home data listener
+  
   useEffect(() => {
     const handleCallHomeData = (event, appInfo) => {
       console.log('📞 Call-home data received:', appInfo.name, appInfo.uuid)
       
       setLatestUpdate(appInfo)
       
-      // Update apps map with latest info
+      
       setApps(prev => {
         const newApps = new Map(prev)
         const isNewApp = !prev.has(appInfo.uuid)
@@ -187,7 +187,7 @@ export const ConnectedAppProvider = ({ children }) => {
         return newApps
       })
 
-      // Update stats
+      
       setStats(prev => ({
         totalUpdates: prev.totalUpdates + 1,
         uniqueApps: prev.uniqueApps + (apps.has(appInfo.uuid) ? 0 : 1),
@@ -195,7 +195,7 @@ export const ConnectedAppProvider = ({ children }) => {
       }))
     }
 
-    // Set up the listener
+    
     window.api.callHome.onData(handleCallHomeData)
 
     return () => {
@@ -203,15 +203,15 @@ export const ConnectedAppProvider = ({ children }) => {
     }
   }, [apps])
 
-  // Initial setup and cleanup intervals
+  
   useEffect(() => {
-    // Check server status on mount
+    
     checkServerStatus()
 
-    // Set up status update interval
-    const statusInterval = setInterval(updateAppStatuses, 30000) // 30 seconds
+    
+    const statusInterval = setInterval(updateAppStatuses, 30000) 
 
-    // Set up cleanup interval
+    
     cleanupTimerRef.current = setInterval(cleanupOldApps, autoCleanupInterval)
 
     return () => {
@@ -222,18 +222,18 @@ export const ConnectedAppProvider = ({ children }) => {
     }
   }, [checkServerStatus, updateAppStatuses, cleanupOldApps, autoCleanupInterval])
 
-  // Get next available port for any field
+  
   const getNextAvailablePort = useCallback((startPort, field) => {
     const usedPorts = new Set();
     
-    // Collect all used ports from connected apps
+    
     apps.forEach(app => {
       if (app[field]) {
         usedPorts.add(app[field]);
       }
     });
     
-    // Find next available port
+    
     let port = startPort;
     while (usedPorts.has(port)) {
       port++;
@@ -243,7 +243,7 @@ export const ConnectedAppProvider = ({ children }) => {
     return port;
   }, [apps]);
 
-  // Convenience methods for specific port types
+  
   const getNextDebugPort = useCallback(() => {
     return getNextAvailablePort(10100, 'port');
   }, [getNextAvailablePort]);
@@ -252,9 +252,9 @@ export const ConnectedAppProvider = ({ children }) => {
     return getNextAvailablePort(11100, 'ipc_monitor_port');
   }, [getNextAvailablePort]);
 
-  // Context value
+  
   const contextValue = {
-    // State
+    
     apps: Array.from(apps.values()),
     appsMap: apps,
     latestUpdate,
@@ -262,12 +262,12 @@ export const ConnectedAppProvider = ({ children }) => {
     isListening,
     stats,
     
-    // Computed values
+    
     appCount: apps.size,
     onlineCount: getOnlineApps().length,
     offlineCount: getOfflineApps().length,
     
-    // Methods - App data
+    
     getApp,
     getApps,
     getOnlineApps,
@@ -276,17 +276,17 @@ export const ConnectedAppProvider = ({ children }) => {
     clearApps,
     forceCleanup,
     
-    // Methods - Server control
+    
     startListener,
     stopListener,
     checkServerStatus,
     
-    // Methods - Port management
+    
     getNextAvailablePort,
     getNextDebugPort,
     getNextIpcMonitorPort,
     
-    // Methods - Utility
+    
     updateAppStatuses
   }
 
@@ -297,7 +297,7 @@ export const ConnectedAppProvider = ({ children }) => {
   )
 }
 
-// Hook to use the context
+
 export const useConnectedApps = () => {
   const context = useContext(ConnectedAppContext)
   if (!context) {
@@ -306,7 +306,7 @@ export const useConnectedApps = () => {
   return context
 }
 
-// Specialized hooks for specific use cases
+
 export const useAppMonitor = (targetUUIDs = []) => {
   const { apps, getApp, latestUpdate, isAppOnline, ...rest } = useConnectedApps()
 
@@ -353,13 +353,13 @@ export const useAppStats = () => {
     apps
   } = useConnectedApps()
   
-  // Additional computed stats
+  
   const avgJobsPerApp = apps.length > 0 
     ? apps.reduce((sum, app) => sum + (app.active_jobs || 0), 0) / apps.length 
     : 0
 
   const recentlyActive = apps.filter(app => 
-    Date.now() - app.lastSeen < 60000 // Last minute
+    Date.now() - app.lastSeen < 60000 
   ).length
 
   return {

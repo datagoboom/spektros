@@ -63,7 +63,7 @@ import { useApi } from '../contexts/ApiContext';
 import { v4 as uuidv4 } from 'uuid';
 import TerminalPanel from '../components/injector/TerminalPanel';
 
-// Create payloads array
+
 const payloads = [
   DevToolsControl,
   GetProcessInfo,
@@ -82,9 +82,9 @@ export default function Injector() {
   const { settings } = useSettings();
   const backgroundColor = settings.themeType === 'light' ? theme.palette.background.paper : theme.palette.color.black;
   
-  // Get state and actions from InjectorContext
+  
   const {
-    // State
+    
     asarPath, setAsarPath,
     selectedPayload, setSelectedPayload,
     injectionStatus, setInjectionStatus,
@@ -96,13 +96,13 @@ export default function Injector() {
     consoleHistory, setConsoleHistory,
     consoleHistoryIndex, setConsoleHistoryIndex,
     selectedProcess, setSelectedProcess,
-    // Actions
+    
     clearInjectionStatus,
     clearAsarPath,
     clearAll,
   } = useInjector();
 
-  // Get state and actions from ConnectedAppContext
+  
   const {
     apps,
     isListening,
@@ -121,7 +121,7 @@ export default function Injector() {
     openFileDialog
   } = useApi();
 
-  // Local state that doesn't need to persist between page changes
+  
   const [isSetupLoading, setIsSetupLoading] = React.useState(false);
   const [activeJobs, setActiveJobs] = React.useState(new Map());
   const [resetKey, setResetKey] = React.useState(0);
@@ -143,12 +143,12 @@ export default function Injector() {
   const [customTargetPath, setCustomTargetPath] = useState(null);
   const [selectedApp, setSelectedApp] = useState(null);
 
-  // Update the payload selection handler
+  
   const handlePayloadSelect = (event) => {
     setSelectedPayload(event.target.value);
   };
 
-  // File selection
+  
   const handleSelectAsar = useCallback(async () => {
     try {
       console.log('🔄 Opening ASAR file dialog...');
@@ -158,10 +158,10 @@ export default function Injector() {
       if (result && result.success && result.filePath) {
         console.log('✅ Selected ASAR file:', result.filePath);
         setAsarPath(result.filePath);
-        setIsSetupComplete(false); // Reset setup status
+        setIsSetupComplete(false); 
         setSetupStatus(null);
         setAsarUuid(uuidv4());
-        // Use the next available port from context
+        
         const nextPort = getNextAvailablePort(10100);
         setAsarConfig(prev => ({
           ...prev,
@@ -177,7 +177,7 @@ export default function Injector() {
     }
   }, [setAsarPath, setIsSetupComplete, setSetupStatus]);
 
-  // Inject Hook handler
+  
   const handleInjectHook = async () => {
     if (!asarPath || !asarUuid) {
       setSetupStatus({
@@ -187,7 +187,7 @@ export default function Injector() {
       return;
     }
 
-    // Validate custom target path if enabled
+    
     if (useCustomTargetPath && !customTargetPath) {
       setSetupStatus({
         type: 'error',
@@ -214,7 +214,7 @@ export default function Injector() {
           message: `Setup completed! Hook payload injected.`
         });
         setTimeout(() => setSetupStatus(null), 3000);
-        setAsarPath(''); // Clear file input
+        setAsarPath(''); 
       } else {
         throw new Error(result.error || 'Injection failed');
       }
@@ -229,7 +229,7 @@ export default function Injector() {
     }
   };
 
-  // Load console history from localStorage on mount
+  
   useEffect(() => {
     const savedHistory = localStorage.getItem('consoleHistory');
     if (savedHistory) {
@@ -241,7 +241,7 @@ export default function Injector() {
     }
   }, [setConsoleHistory]);
 
-  // Modal for configuring injection params
+  
   const openConfigModal = () => {
     setPendingConfig({
       ...asarConfig,
@@ -260,7 +260,7 @@ export default function Injector() {
     setShowConfigModal(false);
   };
 
-  // Helper to get next available port
+  
   const getNextAvailablePort = (startPort = 10100) => {
     const usedPorts = new Set(apps.map(app => app.debugPort || app.port));
     let port = startPort;
@@ -292,7 +292,7 @@ export default function Injector() {
             flexDirection: 'column',
             backgroundColor: theme.palette.background.paper,
           }}>
-            {/* Setup Section */}
+            {}
             <Box sx={{ 
               p: 2, 
               borderBottom: 1, 
@@ -300,7 +300,7 @@ export default function Injector() {
               backgroundColor: theme.palette.background.content,
             }}>
               
-              {/* ASAR Selection */}
+              {}
               <Card sx={{ mb: 2, backgroundColor: theme.palette.background.default }}>
                 <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                   <Typography variant="subtitle2" sx={{ mb: 1, color: theme.palette.text.primary }}>
@@ -369,7 +369,7 @@ export default function Injector() {
                 </Button>
               </Container>
 
-              {/* Hooked Apps List */}
+              {}
               <Card sx={{ mb: 2, backgroundColor: theme.palette.background.default }}>
                 <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
@@ -414,7 +414,7 @@ export default function Injector() {
               </Card>
             </Box>
 
-            {/* Terminal Section */}
+            {}
             <Box sx={{ 
               flexGrow: 1, 
               display: 'flex',
@@ -467,10 +467,10 @@ export default function Injector() {
                 {setupStatus.message}
               </Alert>
             )}
-            {/* Nested resizable panels for AppInfo, Cookies, and IPCMonitor */}
+            {}
             <Box sx={{ flexGrow: 1, minHeight: 0, display: 'flex', height: '100%' }}>
               <PanelGroup direction="horizontal">
-                {/* Left column: AppInfo and Cookies (vertical split) */}
+                {}
                 <Panel defaultSize={50} minSize={20}>
                   <PanelGroup direction="vertical">
                     <Panel defaultSize={30} minSize={20} maxSize={30}>
@@ -483,7 +483,7 @@ export default function Injector() {
                   </PanelGroup>
                 </Panel>
                 <PanelResizeHandle style={{ width: 10, backgroundColor: theme.palette.background.nav }} />
-                {/* Right column: IPCMonitor */}
+                {}
                 <Panel minSize={20}>
                   <IPCMonitor appConfig={selectedApp} />
                 </Panel>
@@ -508,7 +508,7 @@ export default function Injector() {
         </Alert>
       </Snackbar>
 
-      {/* Modal for configuring injection params */}
+      {}
       <Dialog open={showConfigModal} onClose={handleConfigCancel}>
         <DialogTitle>Configure Injection Parameters</DialogTitle>
         <DialogContent>

@@ -22,20 +22,20 @@ import {
   getPayloadStatus,
   templatePayload
 } from './inject'
-import { callHomeServer } from './server' // Import the server
+import { callHomeServer } from './server' 
 import icon from '../../resources/icon.png?asset'
 import { promises as fs } from 'fs'
 import hook from './hook'
 
-// Import theme management
+
 import './theme'
 
-// Clear all cookies and localStorage
+
 async function clearBrowserData() {
   try {
     console.log('🧹 Clearing browser data...');
     
-    // Clear cookies
+    
     await session.defaultSession.clearStorageData({
       storages: ['cookies', 'localstorage', 'sessionstorage', 'indexdb', 'websql', 'shadercache', 'serviceworkers', 'cachestorage']
     });
@@ -78,7 +78,7 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  // Clear browser data before initializing the app
+  
   await clearBrowserData();
   
   electronApp.setAppUserModelId('com.spektros')
@@ -87,7 +87,7 @@ app.whenReady().then(async () => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // NEW: Injection Setup IPC Handler
+  
   ipcMain.handle('inject:setup', async (event, asarPath) => {
     try {
       console.log(`🚀 Setting up injection for: ${asarPath}`)
@@ -99,7 +99,7 @@ app.whenReady().then(async () => {
     }
   })
 
-  // ASAR Analysis IPC Handlers
+  
   ipcMain.handle('analysis:extract', async (event, asarPath) => {
     try {
       console.log(`🔄 Extracting ASAR: ${asarPath}`)
@@ -144,7 +144,7 @@ app.whenReady().then(async () => {
     }
   })
 
-  // Search IPC Handlers
+  
   ipcMain.handle('analysis:search', async (event, tmpDir, searchQuery, options) => {
     try {
       console.log(`🔍 Searching in: ${tmpDir} for: "${searchQuery}"`)
@@ -169,7 +169,7 @@ app.whenReady().then(async () => {
     }
   })
 
-  // Add new repack handler
+  
   ipcMain.handle('analysis:repack', async (event, sourceDir, outputPath) => {
     try {
       console.log(`🔄 Repacking ASAR from ${sourceDir} to ${outputPath}`)
@@ -181,7 +181,7 @@ app.whenReady().then(async () => {
     }
   })
 
-  // Injection IPC Handlers
+  
   ipcMain.handle('inject:payload', async (event, payloadPath, asarPath) => {
     try {
       console.log(`💉 Injecting payload: ${payloadPath} -> ${asarPath}`)
@@ -246,7 +246,7 @@ app.whenReady().then(async () => {
     }
   })
 
-  // Start the call-home server
+  
   try {
     callHomeServer.start();
     console.log('✅ Call-home server started successfully');
@@ -254,7 +254,7 @@ app.whenReady().then(async () => {
     console.error('❌ Failed to start call-home server:', error);
   }
 
-  // Call-home IPC Handlers - Updated to use the new server
+  
   ipcMain.handle('inject:startListener', async () => {
     try {
       if (!callHomeServer.isRunning()) {
@@ -305,7 +305,7 @@ app.whenReady().then(async () => {
     }
   });
 
-  // File Dialog IPC Handlers
+  
   ipcMain.handle('file-dialog:get-path', async (event, options = {}) => {
     try {
       const defaultOptions = {
@@ -360,13 +360,13 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('inject:hook', async (event, config, customTarget = null) => {
     try {
-      // Use Electron's userData path for appDir
+      
       const appDir = app.getPath('userData');
       const tmpDir = join(appDir, 'tmp');
       await fs.mkdir(tmpDir, { recursive: true });
       const payloadPath = join(tmpDir, 'hook.js');
 
-      // Fill in defaults for config
+      
       const {
         asarPath,
         uuid,
@@ -383,7 +383,7 @@ app.whenReady().then(async () => {
         throw new Error('asarPath and uuid are required');
       }
 
-      // Prepare variables for templating
+      
       const templateVars = {
         APP_UUID: uuid,
         DEBUG_PORT: debugPort,
@@ -395,11 +395,11 @@ app.whenReady().then(async () => {
         ENABLE_CALL_HOME: enableCallHome ? 'true' : 'false'
       };
 
-      // Template the payload
+      
       const templatedPayload = templatePayload(hook.code, templateVars);
       await fs.writeFile(payloadPath, templatedPayload, 'utf8');
 
-      // Inject the payload into the ASAR
+      
       const result = await injectPayload(payloadPath, asarPath, customTarget);
       return { success: true, ...result, payloadPath };
     } catch (error) {
@@ -420,7 +420,7 @@ app.on('window-all-closed', () => {
   }
 })
 
-// Clean shutdown of server
+
 app.on('before-quit', async () => {
   try {
     await callHomeServer.stop();

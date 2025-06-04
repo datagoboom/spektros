@@ -1,9 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
-// Custom APIs for renderer
+
 const api = {
-  // ASAR Analysis APIs
+  
   analysis: {
     extractAsar: (asarPath) => ipcRenderer.invoke('analysis:extract', asarPath),
     getFileContent: (filePath) => ipcRenderer.invoke('analysis:getFileContent', filePath),
@@ -15,13 +15,13 @@ const api = {
     repack: (sourceDir, outputPath) => ipcRenderer.invoke('analysis:repack', sourceDir, outputPath)
   },
   
-  // App Directory APIs
+  
   app: {
     getThemes: () => ipcRenderer.invoke('app:getThemes'),
     loadTheme: (themeId) => ipcRenderer.invoke('app:loadTheme', themeId),
   },
   
-  // Injection APIs
+  
   inject: {
     setup: (asarPath) => ipcRenderer.invoke('inject:setup', asarPath),
     injectPayload: (payloadPath, asarPath) => ipcRenderer.invoke('inject:payload', payloadPath, asarPath),
@@ -37,20 +37,20 @@ const api = {
     hook: (config, customTarget = null) => ipcRenderer.invoke('inject:hook', config, customTarget)
   },
   
-  // Call-home data streaming
+  
   callHome: {
     onData: (callback) => ipcRenderer.on('call-home-data', callback),
     removeListeners: () => ipcRenderer.removeAllListeners('call-home-data')
   },
   
-  // File Dialog APIs
+  
   fileDialog: {
     openFile: (options) => ipcRenderer.invoke('file-dialog:get-path', options),
     saveFile: (options) => ipcRenderer.invoke('file-dialog:save', options)
   }
 }
 
-// Expose APIs to renderer process
+
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)
@@ -59,7 +59,7 @@ if (process.contextIsolated) {
     console.error('Failed to expose APIs:', error)
   }
 } else {
-  // Fallback for non-isolated contexts
+  
   window.electron = electronAPI
   window.api = api
 }

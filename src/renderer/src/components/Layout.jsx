@@ -3,7 +3,7 @@ import { Container } from "@mui/material";
 import { Outlet } from "react-router-dom";
 import { useTheme } from "../theme";
 
-// components
+
 import Sidebar from "./common/Sidebar";
 
 export default function Layout() {
@@ -18,7 +18,7 @@ export default function Layout() {
         display: "flex", 
         flexDirection: "column",
         height: "100vh",
-        overflow: "hidden" // Prevent main container from scrolling
+        overflow: "hidden" 
       }}
     >
       <Container 
@@ -29,7 +29,7 @@ export default function Layout() {
           display: "flex", 
           flexDirection: "row",
           flex: 1,
-          overflow: "hidden" // Prevent body from scrolling
+          overflow: "hidden" 
         }}
       >
         <Sidebar />
@@ -42,7 +42,7 @@ export default function Layout() {
             display: "flex",
             flexDirection: "column",
             flex: 1,
-            overflow: "hidden", // Prevent content from scrolling
+            overflow: "hidden", 
             color: theme.palette.text.primary,
           }}
         >

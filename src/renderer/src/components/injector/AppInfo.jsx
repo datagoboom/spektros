@@ -36,7 +36,7 @@ export default function AppInfo({ appConfig }) {
 
   const config = appConfig || selectedApp;
 
-  // Use config.port (from call-home POST) for requests
+  
   useEffect(() => {
     let intervalId;
     const fetchAppInfo = async () => {
@@ -76,7 +76,7 @@ export default function AppInfo({ appConfig }) {
     };
   }, [isPolling, pollInterval, config]);
 
-  // Helper for pretty uptime
+  
   const formatUptime = (seconds) => {
     if (!seconds) return '0s';
     const h = Math.floor(seconds / 3600);
@@ -89,7 +89,7 @@ export default function AppInfo({ appConfig }) {
     ].filter(Boolean).join(' ');
   };
 
-  // Helper for pretty date
+  
   const formatDate = (ts) => {
     if (!ts) return '';
     const d = new Date(ts);
@@ -197,7 +197,7 @@ export default function AppInfo({ appConfig }) {
           <Typography color="error">{error}</Typography>
         ) : appInfo ? (
           <Box>
-            {/* App Section */}
+            {}
             <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>App</Typography>
             <Box sx={{ mb: 1 }}>
               <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>{appInfo.app?.name} v{appInfo.app?.version}</Typography><br />
@@ -207,7 +207,7 @@ export default function AppInfo({ appConfig }) {
             </Box>
             <Divider sx={{ mb: 1 }} />
 
-            {/* System Section */}
+            {}
             <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>System</Typography>
             <Box sx={{ mb: 1 }}>
               <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>{appInfo.system?.platform} / {appInfo.system?.arch}</Typography><br />
@@ -216,7 +216,7 @@ export default function AppInfo({ appConfig }) {
             </Box>
             <Divider sx={{ mb: 1 }} />
 
-            {/* Windows Section */}
+            {}
             <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Windows</Typography>
             {Array.isArray(appInfo.windows) && appInfo.windows.length > 0 ? (
               <TableContainer component={Paper} sx={{ backgroundColor: theme.palette.background.nav, mb: 1, color: theme.palette.text.primary }}>
@@ -250,7 +250,7 @@ export default function AppInfo({ appConfig }) {
             )}
             <Divider sx={{ mb: 1 }} />
 
-            {/* Debug Section */}
+            {}
             <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>Debug</Typography>
             <Box>
               <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>Active Jobs: {appInfo.debug?.activeJobs}</Typography><br />
