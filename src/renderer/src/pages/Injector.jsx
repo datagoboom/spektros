@@ -388,9 +388,7 @@ export default function Injector() {
                     </IconButton>
                   </Box>
                   <FormControl fullWidth size="small">
-                    <InputLabel id="hooked-apps-label">Select Hooked App</InputLabel>
                     <Select
-                      labelId="hooked-apps-label"
                       value={selectedApp?.uuid || ''}
                       label="Select Hooked App"
                       onChange={e => {
