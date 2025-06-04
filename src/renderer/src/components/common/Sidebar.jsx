@@ -53,7 +53,7 @@ export default function Sidebar(props) {
         flexDirection: 'column',
         justifyContent: 'space-between',
         alignItems: 'center',
-        height: '100vh',
+
         borderRight: `1px solid ${theme.palette.text.secondary}`,
         padding: 0
       }}

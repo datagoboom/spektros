@@ -1,4 +1,4 @@
-import { Container, Box, Typography } from '@mui/material';
+import { Container, Box, Typography, TextField, InputAdornment } from '@mui/material';
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
 import { 
     ExpandMore, 
@@ -9,10 +9,12 @@ import {
     Description,
     Settings,
     Security,
-    Image
+    Image,
+    Search
 } from '@mui/icons-material';
 import { useTheme } from '../../theme';
 import { useAnalysis } from '../../contexts/AnalysisContext';
+import { useState, useMemo } from 'react';
 
 // Map file types to icons
 const getFileIcon = (fileType, theme) => {
@@ -133,16 +135,48 @@ function findItemById(items, id) {
     return null;
 }
 
+// Filter tree data based on search term and return flat list of matches
+const filterTreeData = (treeData, searchTerm) => {
+    if (!searchTerm) return { treeData, flatMatches: [] };
+
+    const searchLower = searchTerm.toLowerCase();
+    const flatMatches = [];
+    
+    const findMatches = (node, currentPath = '') => {
+        const fullPath = currentPath ? `${currentPath}/${node.label}` : node.label;
+        
+        // If node matches search, add it to matches
+        if (node.label.toLowerCase().includes(searchLower)) {
+            flatMatches.push({
+                ...node,
+                fullPath
+            });
+        }
+
+        // Recursively check children
+        if (node.children) {
+            node.children.forEach(child => findMatches(child, fullPath));
+        }
+    };
+
+    treeData.forEach(node => findMatches(node));
+    return { treeData, flatMatches };
+};
+
 export default function FileTree({ onFileSelect }) {
     const theme = useTheme();
     const { fileTree, isLoading } = useAnalysis();
+    const [searchTerm, setSearchTerm] = useState('');
     
     console.log('FileTree render - fileTree:', fileTree, 'isLoading:', isLoading);
     
     // Build tree data with safety checks
     const treeData = buildTreeFromFiles(fileTree);
     
-    console.log('Built treeData:', treeData);
+    // Filter tree data based on search term
+    const { treeData: filteredTreeData, flatMatches } = useMemo(() => {
+        return filterTreeData(treeData, searchTerm);
+    }, [treeData, searchTerm]);
 
     // Show loading state
     if (isLoading) {
@@ -213,85 +247,154 @@ export default function FileTree({ onFileSelect }) {
                 },
             }}
         >
-            {treeData.length > 0 ? (
-                <RichTreeView
-                    items={treeData}
-                    defaultExpanded={['root']}
-                    onItemClick={(event, itemId) => {
-                        console.log('Tree item clicked:', itemId);
-                        // Only trigger for files (items without children)
-                        const item = findItemById(treeData, itemId);
-                        console.log('Found item:', item);
-                        
-                        if (item && !item.children && item.data) {
-                            console.log('Calling onFileSelect with path:', item.data.path);
-                            if (onFileSelect) {
-                                onFileSelect(item.data.path);
-                            }
-                        } else {
-                            console.log('Item not selected because:', {
-                                hasItem: !!item,
-                                hasChildren: !!item?.children,
-                                hasData: !!item?.data
-                            });
-                        }
-                    }}
-                    slots={{
-                        expandIcon: ExpandMore,
-                        collapseIcon: ChevronRight,
-                    }}
-                    slotProps={{
-                        expandIcon: {
-                            sx: { color: theme.palette.text.secondary }
-                        },
-                        collapseIcon: {
-                            sx: { color: theme.palette.text.secondary }
-                        }
-                    }}
-                    renderItem={(item) => (
-                        <Box sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center',
-                            color: theme.palette.text.primary,
-                            fontSize: '13px',
-                        }}>
-                            {item.children ? (
-                                <Folder sx={{ 
+            {/* Search Bar */}
+            <Box sx={{ width: '100%', mb: 2 }}>
+                <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Filter files..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <Search sx={{ 
                                     fontSize: 16, 
-                                    mr: 1,
-                                    color: theme.palette.color?.blue || theme.palette.primary.main
+                                    color: theme.palette.text.secondary 
                                 }} />
-                            ) : (
-                                <Box sx={{ mr: 1 }}>
-                                    {getFileIcon(item.data?.type, theme)}
-                                </Box>
-                            )}
-                            {item.label}
-                        </Box>
-                    )}
+                            </InputAdornment>
+                        ),
+                    }}
                     sx={{
-                        flexGrow: 1,
-                        width: '100%',
-                        '& .MuiTreeItem-root': {
-                            '& .MuiTreeItem-content': {
-                                padding: '2px 0',
+                        '& .MuiOutlinedInput-root': {
+                            backgroundColor: theme.palette.background.default,
+                            '& fieldset': {
+                                borderColor: theme.palette.background.nav,
                             },
-                            '& .MuiTreeItem-content:hover': {
-                                backgroundColor: theme.palette.background.sidebar || theme.palette.action.hover,
-                            },
-                            '& .MuiTreeItem-content.Mui-selected': {
-                                backgroundColor: `${theme.palette.background.sidebar || theme.palette.action.selected} !important`,
-                            },
-                            '& .MuiTreeItem-content.Mui-selected:hover': {
-                                backgroundColor: theme.palette.background.sidebar || theme.palette.action.selected,
+                            '&:hover fieldset': {
+                                borderColor: theme.palette.text.secondary,
                             },
                         },
                     }}
                 />
+            </Box>
+
+            {searchTerm ? (
+                // Show flat list of matches when searching
+                <Box sx={{ width: '100%' }}>
+                    {flatMatches.length > 0 ? (
+                        flatMatches.map((match, index) => (
+                            <Box
+                                key={match.id}
+                                onClick={() => match.data && onFileSelect(match.data.path)}
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    padding: '4px 8px',
+                                    cursor: match.data ? 'pointer' : 'default',
+                                    '&:hover': {
+                                        backgroundColor: match.data ? theme.palette.background.sidebar : 'transparent',
+                                    },
+                                    color: theme.palette.text.primary,
+                                    fontSize: '13px',
+                                }}
+                            >
+                                <Box sx={{ mr: 1 }}>
+                                    {match.data ? (
+                                        getFileIcon(match.data.type, theme)
+                                    ) : (
+                                        <Folder sx={{ 
+                                            fontSize: 16,
+                                            color: theme.palette.color?.blue || theme.palette.primary.main
+                                        }} />
+                                    )}
+                                </Box>
+                                <Typography
+                                    sx={{
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                >
+                                    {match.fullPath}
+                                </Typography>
+                            </Box>
+                        ))
+                    ) : (
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                            No matching files found
+                        </Typography>
+                    )}
+                </Box>
             ) : (
-                <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                    No files to display
-                </Typography>
+                // Show tree view when not searching
+                filteredTreeData.length > 0 ? (
+                    <RichTreeView
+                        items={filteredTreeData}
+                        defaultExpanded={['root']}
+                        onItemClick={(event, itemId) => {
+                            const item = findItemById(filteredTreeData, itemId);
+                            if (item && !item.children && item.data) {
+                                onFileSelect(item.data.path);
+                            }
+                        }}
+                        slots={{
+                            expandIcon: ExpandMore,
+                            collapseIcon: ChevronRight,
+                        }}
+                        slotProps={{
+                            expandIcon: {
+                                sx: { color: theme.palette.text.secondary }
+                            },
+                            collapseIcon: {
+                                sx: { color: theme.palette.text.secondary }
+                            }
+                        }}
+                        renderItem={(item) => (
+                            <Box sx={{ 
+                                display: 'flex', 
+                                alignItems: 'center',
+                                color: theme.palette.text.primary,
+                                fontSize: '13px',
+                            }}>
+                                {item.children ? (
+                                    <Folder sx={{ 
+                                        fontSize: 16, 
+                                        mr: 1,
+                                        color: theme.palette.color?.blue || theme.palette.primary.main
+                                    }} />
+                                ) : (
+                                    <Box sx={{ mr: 1 }}>
+                                        {getFileIcon(item.data?.type, theme)}
+                                    </Box>
+                                )}
+                                {item.label}
+                            </Box>
+                        )}
+                        sx={{
+                            flexGrow: 1,
+                            width: '100%',
+                            '& .MuiTreeItem-root': {
+                                '& .MuiTreeItem-content': {
+                                    padding: '2px 0',
+                                },
+                                '& .MuiTreeItem-content:hover': {
+                                    backgroundColor: theme.palette.background.sidebar || theme.palette.action.hover,
+                                },
+                                '& .MuiTreeItem-content.Mui-selected': {
+                                    backgroundColor: `${theme.palette.background.sidebar || theme.palette.action.selected} !important`,
+                                },
+                                '& .MuiTreeItem-content.Mui-selected:hover': {
+                                    backgroundColor: theme.palette.background.sidebar || theme.palette.action.selected,
+                                },
+                            },
+                        }}
+                    />
+                ) : (
+                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                        No files to display
+                    </Typography>
+                )
             )}
         </Container>
     );

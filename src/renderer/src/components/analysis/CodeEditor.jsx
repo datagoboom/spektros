@@ -230,7 +230,7 @@ export default function CodeEditor({ file }) {
 
   return (
     <Box sx={{
-      height: 'calc(100vh - 100px)',
+      height: '100%',
       width: '100%',
       opacity: 0.90,
       overflow: 'hidden',
