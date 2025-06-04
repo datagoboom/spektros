@@ -3,6 +3,7 @@ import { Editor } from "prism-react-editor";
 import { loadTheme } from "prism-react-editor/themes";
 import { BasicSetup } from "prism-react-editor/setups";
 import { useCodeEditor } from '../../contexts/CodeEditorContext';
+import { useApi } from '../../contexts/ApiContext';
 import { Box } from '@mui/material';
 import { useTheme } from '../../theme';
 import { useSettings, CODE_EDITOR_THEMES } from '../../contexts/SettingsContext';
@@ -73,6 +74,7 @@ export default function CodeEditor({ file }) {
     getFileContent,
     isFileTracked
   } = useCodeEditor();
+  const { saveFile } = useApi();
   const theme = useTheme();
   const [editorTheme, setEditorTheme] = useState(null);
   const [language, setLanguage] = useState('plaintext');
@@ -191,7 +193,11 @@ export default function CodeEditor({ file }) {
       try {
         // Update context with new content for change tracking
         await updateFileContent(file.path, value);
-        console.log(`✏️  Content changed for ${file.path}: ${value.length} chars`);
+        
+        // Save the file content to disk
+        await saveFile(file.path, value);
+        
+        console.log(`✏️  Content changed and saved for ${file.path}: ${value.length} chars`);
       } catch (error) {
         console.error('Failed to update file content:', error);
       }
@@ -230,7 +236,7 @@ export default function CodeEditor({ file }) {
 
   return (
     <Box sx={{
-      height: 'calc(100vh - 100px)',
+      height: '100%',
       width: '100%',
       opacity: 0.90,
       overflow: 'hidden',

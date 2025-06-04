@@ -378,15 +378,21 @@ export default function Analysis() {
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh',
+        height: '100%',
         width: '100%',
         backgroundColor: theme.palette.background.default,
+        overflow: 'hidden'
       }}
     >
       <UtilityBar>
         <AnalysisBar />
       </UtilityBar>
-      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ 
+        flex: 1, 
+        display: 'flex', 
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}>
         <PanelGroup direction="horizontal">
           <Panel 
             defaultSize={20} 
@@ -402,9 +408,11 @@ export default function Analysis() {
           <Panel minSize={30}>
             <Box sx={{ 
               width: '100%', 
-              height: 'calc(100vh - 64px)',
+              height: '100%',
               display: 'flex', 
-              flexDirection: 'column' }}>
+              flexDirection: 'column',
+              overflow: 'hidden'
+            }}>
               {openFiles.length > 0 && (
                 <Box 
                   sx={{ 
@@ -486,7 +494,7 @@ export default function Analysis() {
                   ))}
                 </Box>
               )}
-              <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+              <Box sx={{ flex: 1, overflow: 'hidden' }}>
                 {fileError ? (
                   <Box
                     sx={{

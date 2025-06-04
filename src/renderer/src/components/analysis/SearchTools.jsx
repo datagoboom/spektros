@@ -19,7 +19,8 @@ import {
     MenuItem,
     Checkbox,
     FormControlLabel,
-    CircularProgress
+    CircularProgress,
+    Alert
 } from '@mui/material';
 import { 
     Search as SearchIcon,
@@ -35,6 +36,8 @@ import {
 } from '@mui/icons-material';
 import { useTheme } from '../../theme';
 import { useApi } from '../../contexts/ApiContext';
+import { useAnalysis } from '../../contexts/AnalysisContext';
+import Highlighter from 'react-highlight-words';
 
 // Mock search results for now
 const mockSearchResults = {
@@ -50,7 +53,8 @@ const mockSearchResults = {
 
 export default function SearchTools() {
     const theme = useTheme();
-    const { searchFiles, replaceInFiles, currentAsarInfo } = useApi();
+    const { searchFiles, replaceInFiles } = useApi();
+    const { tmpDir, fileTree, isLoading: isAnalysisLoading } = useAnalysis();
     const [searchQuery, setSearchQuery] = useState('');
     const [showReplace, setShowReplace] = useState(false);
     const [replaceQuery, setReplaceQuery] = useState('');
@@ -64,14 +68,29 @@ export default function SearchTools() {
     const [searchResults, setSearchResults] = useState({});
     const [isSearching, setIsSearching] = useState(false);
     const [searchStats, setSearchStats] = useState(null);
+    const [error, setError] = useState(null);
 
     const handleSearch = useCallback(async () => {
-        if (!searchQuery.trim() || !currentAsarInfo?.tmpDir) return;
+        if (!searchQuery.trim()) {
+            setError('Please enter a search query');
+            return;
+        }
 
+        if (!tmpDir) {
+            setError('No ASAR file is currently loaded. Please load an ASAR file first.');
+            return;
+        }
+
+        if (isAnalysisLoading) {
+            setError('Please wait for the file tree to finish loading');
+            return;
+        }
+
+        setError(null);
         setIsSearching(true);
         try {
             const results = await searchFiles(
-                currentAsarInfo.tmpDir,
+                tmpDir,
                 searchQuery,
                 {
                     matchCase: options.matchCase,
@@ -89,18 +108,32 @@ export default function SearchTools() {
             });
         } catch (error) {
             console.error('Search failed:', error);
-            // TODO: Show error notification
+            setError(error.message || 'Search failed. Please try again.');
         } finally {
             setIsSearching(false);
         }
-    }, [searchQuery, options, currentAsarInfo, searchFiles]);
+    }, [searchQuery, options, tmpDir, isAnalysisLoading, searchFiles]);
 
     const handleReplace = useCallback(async () => {
-        if (!searchQuery.trim() || !replaceQuery.trim() || !currentAsarInfo?.tmpDir) return;
+        if (!searchQuery.trim() || !replaceQuery.trim()) {
+            setError('Please enter both search and replace text');
+            return;
+        }
 
+        if (!tmpDir) {
+            setError('No ASAR file is currently loaded. Please load an ASAR file first.');
+            return;
+        }
+
+        if (isAnalysisLoading) {
+            setError('Please wait for the file tree to finish loading');
+            return;
+        }
+
+        setError(null);
         try {
             const results = await replaceInFiles(
-                currentAsarInfo.tmpDir,
+                tmpDir,
                 searchQuery,
                 replaceQuery,
                 {
@@ -114,13 +147,16 @@ export default function SearchTools() {
             // Refresh search results after replace
             await handleSearch();
             
-            // TODO: Show success notification with results
-            console.log('Replace completed:', results);
+            // Show success message
+            setError({
+                type: 'success',
+                message: `Successfully replaced ${results.totalReplacements} occurrences in ${results.filesModified} files`
+            });
         } catch (error) {
             console.error('Replace failed:', error);
-            // TODO: Show error notification
+            setError(error.message || 'Replace failed. Please try again.');
         }
-    }, [searchQuery, replaceQuery, options, currentAsarInfo, replaceInFiles, handleSearch]);
+    }, [searchQuery, replaceQuery, options, tmpDir, isAnalysisLoading, replaceInFiles, handleSearch]);
 
     const handleSearchChange = (event) => {
         setSearchQuery(event.target.value);
@@ -152,11 +188,6 @@ export default function SearchTools() {
         setAnchorEl(null);
     };
 
-    const handleResultClick = (filePath, line) => {
-        // TODO: Implement file navigation
-        console.log(`Navigate to ${filePath}:${line}`);
-    };
-
     // Handle Enter key press in search field
     const handleSearchKeyPress = (event) => {
         if (event.key === 'Enter') {
@@ -178,6 +209,15 @@ export default function SearchTools() {
         >
             {/* Search Box */}
             <Box sx={{ p: 2, borderBottom: 1, borderColor: theme.palette.background.nav }}>
+                {error && (
+                    <Alert 
+                        severity={error.type === 'success' ? 'success' : 'error'}
+                        sx={{ mb: 2 }}
+                        onClose={() => setError(null)}
+                    >
+                        {error.message || error}
+                    </Alert>
+                )}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <TextField
                         fullWidth
@@ -186,6 +226,7 @@ export default function SearchTools() {
                         value={searchQuery}
                         onChange={handleSearchChange}
                         onKeyPress={handleSearchKeyPress}
+                        disabled={!tmpDir || isAnalysisLoading}
                         InputProps={{
                             startAdornment: (
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -332,8 +373,6 @@ export default function SearchTools() {
                                     {fileResult.matches.map((match, index) => (
                                         <ListItem
                                             key={index}
-                                            button
-                                            onClick={() => handleResultClick(filePath, match.line)}
                                             sx={{
                                                 pl: 4,
                                                 '&:hover': {
@@ -359,9 +398,23 @@ export default function SearchTools() {
                                                         sx={{
                                                             color: theme.palette.text.primary,
                                                             fontSize: '0.875rem',
+                                                            fontFamily: 'monospace',
                                                         }}
-                                                        dangerouslySetInnerHTML={{ __html: match.highlighted }}
-                                                    />
+                                                    >
+                                                        <Highlighter
+                                                            highlightClassName="search-highlight"
+                                                            searchWords={[searchQuery]}
+                                                            autoEscape={true}
+                                                            textToHighlight={match.content}
+                                                            caseSensitive={options.matchCase}
+                                                            highlightStyle={{
+                                                                backgroundColor: theme.palette.warning.main,
+                                                                color: theme.palette.warning.contrastText,
+                                                                padding: '0 2px',
+                                                                borderRadius: '2px',
+                                                            }}
+                                                        />
+                                                    </Typography>
                                                 }
                                             />
                                         </ListItem>

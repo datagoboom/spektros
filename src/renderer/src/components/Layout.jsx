@@ -10,8 +10,28 @@ export default function Layout() {
   const theme = useTheme();
 
   return (
-    <Container maxWidth={false} id="layout-main" disableGutters sx={{ display: "flex", flexDirection: "column" }}>
-      <Container maxWidth={false} id="layout-body" disableGutters sx={{ display: "flex", flexDirection: "row"}}>
+    <Container 
+      maxWidth={false} 
+      id="layout-main" 
+      disableGutters 
+      sx={{ 
+        display: "flex", 
+        flexDirection: "column",
+        height: "100vh",
+        overflow: "hidden" // Prevent main container from scrolling
+      }}
+    >
+      <Container 
+        maxWidth={false} 
+        id="layout-body" 
+        disableGutters 
+        sx={{ 
+          display: "flex", 
+          flexDirection: "row",
+          flex: 1,
+          overflow: "hidden" // Prevent body from scrolling
+        }}
+      >
         <Sidebar />
         <Container
           id="layout-content"
@@ -21,10 +41,8 @@ export default function Layout() {
             backgroundColor: theme.palette.background.default,
             display: "flex",
             flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "100vh",
-            width: "100%",
+            flex: 1,
+            overflow: "hidden", // Prevent content from scrolling
             color: theme.palette.text.primary,
           }}
         >

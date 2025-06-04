@@ -7,7 +7,8 @@ import {
   getFileTree, 
   saveFileContent, 
   searchFiles, 
-  replaceInFiles 
+  replaceInFiles,
+  repackAsar
 } from './analysis'
 import { 
   setupInjection,  
@@ -164,6 +165,18 @@ app.whenReady().then(async () => {
       return { success: true, ...results }
     } catch (error) {
       console.error('Replace failed:', error)
+      return { success: false, error: error.message }
+    }
+  })
+
+  // Add new repack handler
+  ipcMain.handle('analysis:repack', async (event, sourceDir, outputPath) => {
+    try {
+      console.log(`🔄 Repacking ASAR from ${sourceDir} to ${outputPath}`)
+      const result = await repackAsar(sourceDir, outputPath)
+      return { success: true, ...result }
+    } catch (error) {
+      console.error('Repack failed:', error)
       return { success: false, error: error.message }
     }
   })
