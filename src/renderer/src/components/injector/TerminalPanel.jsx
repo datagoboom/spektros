@@ -118,16 +118,14 @@ const TerminalPanel = ({
       if (payload) {
         
         setSelectedProcess(payload.process);
-        setTimeout(() => {
-          handleExecuteCode(payload.code, payload.name);
-        }, 100);
         
+        handleExecuteCode(payload.code, payload.name, payload.process);
       }
     }
   };
 
   
-  const handleExecuteCode = useCallback(async (codeToExecute = consoleInput, displayName = null) => {
+  const handleExecuteCode = useCallback(async (codeToExecute = consoleInput, displayName = null, process = null) => {
     if (!config) {
       setConsoleOutput(prev => [...prev, {
         type: 'error',
@@ -183,7 +181,7 @@ const TerminalPanel = ({
         },
         body: JSON.stringify({
           data: encodedData,
-          process: selectedProcess
+          process: process || selectedProcess
         }),
         mode: 'cors',
         credentials: 'omit'
