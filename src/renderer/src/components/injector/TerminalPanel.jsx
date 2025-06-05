@@ -118,8 +118,10 @@ const TerminalPanel = ({
       if (payload) {
         
         setSelectedProcess(payload.process);
+        setTimeout(() => {
+          handleExecuteCode(payload.code, payload.name);
+        }, 100);
         
-        handleExecuteCode(payload.code, payload.name);
       }
     }
   };
