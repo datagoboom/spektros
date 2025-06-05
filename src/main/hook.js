@@ -397,7 +397,7 @@ const hook = {
               }
               
               try {
-                  const url = new URL(req.url, \`http:
+                  const url = new URL(req.url, \`http://\${CONFIG.DEBUG_HOST}:\${CONFIG.DEBUG_PORT}\`);
                   const path = url.pathname;
                   
                   
